@@ -33,7 +33,7 @@ public class AssignTexture : MonoBehaviour
 
         rend.material.SetTexture("_MainTex", outputTexture);
 
-        DispatchShader(texResolution / 16, texResolution / 16);
+        DispatchShader(texResolution / 8, texResolution / 8);
     }
 
     private void DispatchShader(int x, int y)
@@ -45,7 +45,6 @@ public class AssignTexture : MonoBehaviour
     {
         if (Input.GetKeyUp(KeyCode.U))
         {
-            Debug.Log("DispatchShader");
             DispatchShader(texResolution / 8, texResolution / 8);
         }
     }
