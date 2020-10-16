@@ -405,4 +405,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: f1790339bf90e41c3b4ac6fff23317d5, type: 3}
   texResolution: 256
-  kernelName: SolidRed
+  kernelName: SplitScreen
