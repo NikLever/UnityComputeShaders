@@ -400,9 +400,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1385668697}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dd4db9daf1acb4d93ad2ebb826de9b78, type: 3}
+  m_Script: {fileID: 11500000, guid: 4c09a725260534b089fb5528a1060399, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: f1790339bf90e41c3b4ac6fff23317d5, type: 3}
+  shader: {fileID: 7200000, guid: e56cbc8de2eb84c3384d6d584ed5f93a, type: 3}
   texResolution: 1024
-  kernelName: Circle
+  clearColor: {r: 0.1318975, g: 0.5647947, b: 0.7169812, a: 1}
+  circleColor: {r: 1, g: 0.9538098, b: 0, a: 1}
