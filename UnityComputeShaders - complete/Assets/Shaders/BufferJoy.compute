@@ -5,6 +5,15 @@
 // with cs.SetTexture
 RWTexture2D<float4> Result;
 
+struct circle
+{
+	float2 origin;
+	float2 velocity;
+	float radius;
+};
+
+StructuredBuffer<circle> circlesBuffer;
+
 float4 clearColor;
 float4 circleColor;
 int texResolution;
@@ -57,18 +66,6 @@ void drawCircle( int2 centre, int radius ) {
 	}
 }
 
-void drawBox( uint2 centre, uint size ){
-	int halfSize = size >> 1;
-	uint2 index = uint2(0,0);
-	for(int x=-halfSize; x<halfSize; x++){
-		for(int y=-halfSize; y<halfSize; y++){
-			index.x = centre.x + x;
-			index.y = centre.y + y;
-			Result[index] = circleColor;
-        }
-    }
-}
-
 void clear(){
 	uint2 index = uint2( 0, 0 );
 
@@ -87,8 +84,15 @@ void clear(){
 void Circles (uint3 id : SV_DispatchThreadID)
 {
 	if (clearScreen) clear();
-	uint2 centre = (uint2)(random2((float)id.x + time) * (float)texResolution);
-	uint radius = (int)(random((float)id.x) * ((float)texResolution/30));
+
+	int2 centre = (int2)(circlesBuffer[id.x].origin + circlesBuffer[id.x].velocity * time);
+	while (centre.x>texResolution) centre.x -= texResolution;
+	while (centre.x<0) centre.x += texResolution;
+	while (centre.y>texResolution) centre.y -= texResolution;
+	while (centre.y<0) centre.y += texResolution;
+	
+	uint radius = (int)circlesBuffer[id.x].radius;
+
 	drawCircle( centre, radius );
 }
 
