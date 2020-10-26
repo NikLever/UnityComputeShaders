@@ -45,11 +45,11 @@ public class BufferJoy : MonoBehaviour
     {
         circlesHandle = shader.FindKernel("Circles");
 
-        uint x, y, z;
+        uint threadGroupSizeX;
 
-        shader.GetKernelThreadGroupSizes(circlesHandle, out x, out y, out z);
+        shader.GetKernelThreadGroupSizes(circlesHandle, out threadGroupSizeX, out _, out _);
 
-        int total = (int)x * count;
+        int total = (int)threadGroupSizeX * count;
         circleData = new Circle[total];
 
         float speed = 100;

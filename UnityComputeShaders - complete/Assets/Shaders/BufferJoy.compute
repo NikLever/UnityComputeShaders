@@ -44,26 +44,24 @@ void plot8( int x, int y, int2 centre ) {
 	plot1( -x,  y, centre );  plot1( -y,  x, centre );
 }
 
-void drawCircle( int2 centre, int radius ) {
-	int rs2 = radius*radius*4; 
-	int xs2 = 0;
-	int ys2m1 = rs2 - 2*radius + 1;
+void drawCircle( int2 centre, int radius){
 	int x = 0;
 	int y = radius;
-	int ycs2;
-	plot8( x, y, centre );
-	while( x <= y ) {
-		/* advance to the right */
-		xs2 = xs2 + 8*x + 4;
-		++x;
-		/* calculate new Yc */
-		ycs2 = rs2 - xs2;
-		if( ycs2 < ys2m1 ) {
-			ys2m1 = ys2m1 - 8*y + 4;
-			--y;
+	int d = 1 - radius;
+
+	while (x < y){
+		if (d < 0){
+			d += 2 * x + 3;
+		}else{
+			d += 2 * (x - y) + 5;
+			y--;
 		}
-		plot8( x, y, centre );
+		
+		plot8(x, y, centre);
+
+		x++;
 	}
+
 }
 
 void clear(){

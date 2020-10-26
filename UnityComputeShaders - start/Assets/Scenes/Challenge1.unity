@@ -400,8 +400,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 1385668697}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e56b72689b6ac4c1ea814107a68f3d98, type: 3}
+  m_Script: {fileID: 11500000, guid: a0cbef081a93b41e2894fba04fd2009c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 49d64e6e97c61480da1c517721d7f675, type: 3}
+  shader: {fileID: 7200000, guid: 06646a9f0432b450c9ae1e8010e3cf34, type: 3}
   texResolution: 1024

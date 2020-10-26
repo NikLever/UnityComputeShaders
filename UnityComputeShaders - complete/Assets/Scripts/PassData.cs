@@ -43,7 +43,7 @@ public class PassData : MonoBehaviour
     private void DispatchKernel(int count)
     {
         shader.SetFloat("time", Time.time);
-        shader.SetBool("clearScreen", true );
+        shader.SetBool("clearTexture", true );
         shader.Dispatch(circlesHandle, count, 1, 1);
     }
 

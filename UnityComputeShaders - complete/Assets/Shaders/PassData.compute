@@ -8,7 +8,7 @@ RWTexture2D<float4> Result;
 float4 clearColor;
 float4 circleColor;
 int texResolution;
-int clearScreen = 0;
+int clearTexture = 0;
 float time;
 
 /*Returns pseudo random number in range 0 <= x < 1 */
@@ -35,38 +35,23 @@ void plot8( int x, int y, int2 centre ) {
 	plot1( -x,  y, centre );  plot1( -y,  x, centre );
 }
 
-void drawCircle( int2 centre, int radius ) {
-	int rs2 = radius*radius*4; 
-	int xs2 = 0;
-	int ys2m1 = rs2 - 2*radius + 1;
+void drawCircle( int2 centre, int radius){
 	int x = 0;
 	int y = radius;
-	int ycs2;
-	plot8( x, y, centre );
-	while( x <= y ) {
-		/* advance to the right */
-		xs2 = xs2 + 8*x + 4;
-		++x;
-		/* calculate new Yc */
-		ycs2 = rs2 - xs2;
-		if( ycs2 < ys2m1 ) {
-			ys2m1 = ys2m1 - 8*y + 4;
-			--y;
-		}
-		plot8( x, y, centre );
-	}
-}
+	int d = 1 - radius;
 
-void drawBox( uint2 centre, uint size ){
-	int halfSize = size >> 1;
-	uint2 index = uint2(0,0);
-	for(int x=-halfSize; x<halfSize; x++){
-		for(int y=-halfSize; y<halfSize; y++){
-			index.x = centre.x + x;
-			index.y = centre.y + y;
-			Result[index] = circleColor;
-        }
-    }
+	while (x < y){
+		if (d < 0){
+			d += 2 * x + 3;
+		}else{
+			d += 2 * (x - y) + 5;
+			y--;
+		}
+		
+		plot8(x, y, centre);
+
+		x++;
+	}
 }
 
 void clear(){
@@ -80,15 +65,16 @@ void clear(){
         }
     }
 
-	clearScreen = 0;
+	clearTexture = 0;
 }
 
 [numthreads(32,1,1)]
 void Circles (uint3 id : SV_DispatchThreadID)
 {
-	if (clearScreen) clear();
-	uint2 centre = (uint2)(random2((float)id.x + time) * (float)texResolution);
-	uint radius = (int)(random((float)id.x) * ((float)texResolution/30));
+	if (clearTexture) clear();
+	int2 centre = (int2)(random2((float)id.x + time) * (float)texResolution);
+	int radius = (int)(random((float)id.x) * 30);
+
 	drawCircle( centre, radius );
 }
 

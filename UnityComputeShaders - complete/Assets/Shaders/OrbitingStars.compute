@@ -1,0 +1,31 @@
+﻿#pragma kernel OrbitingStars
+
+RWStructuredBuffer<float3> Result;
+float time;
+
+float random(float value, float seed = 0.546){
+	float res = frac(sin(value + seed) * 143758.5453);
+	return res;
+}
+
+float3 random3(float value){
+	return float3(
+		random(value, 3.9812),
+		random(value, 7.1536),
+		random(value, 5.7241)
+	);
+}
+
+[numthreads(64,1,1)]
+void OrbitingStars (uint3 id : SV_DispatchThreadID)
+{
+    float3 sinDir = normalize(random3(id.x) - 0.5);
+    float3 vec = normalize(random3(id.x + 7.1393) - 0.5);
+    float3 cosDir = normalize(cross(sinDir, vec));
+
+	float scaledTime = time * 0.5 + random(id.x) * 712.131234;
+
+	float3 pos = sinDir * sin(scaledTime) + cosDir * cos(scaledTime);
+
+    Result[id.x] = pos * 2;
+}
