@@ -1,0 +1,35 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+int texResolution;
+int marble;
+
+#include "noiseSimplex.cginc"
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float3 pos = (((float3)id)/(float)texResolution) * 2.0;
+    float scale = 800.0;
+    float3 color;
+    float noise;
+
+    pos *= scale;
+
+    if (marble){
+        float d = perlin(pos.x, pos.y) * scale; 
+        float u = pos.x + d;
+        float v = pos.y + d;
+        d = perlin(u, v) * scale;
+        noise = perlin(pos.x + d, pos.y + d);
+        color = float3(0.6 * (float3(2,2,2) * noise - float3(noise * 0.1, noise * 0.2 - sin(u / 30.0) * 0.1, noise * 0.3 + sin(v / 40.0) * 0.2)));
+    }else{
+        noise = perlin(pos.x, pos.y);
+        color = float3(1,1,1) * noise;
+    }
+
+    Result[id.xy] = float4( color, 1.0 );
+}

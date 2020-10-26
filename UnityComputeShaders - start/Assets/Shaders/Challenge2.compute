@@ -1,0 +1,42 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#define PI2 6.28318530718
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+int texResolution;
+
+float4 fillColor;
+float4 clearColor;
+int sides;
+float time;
+
+#include "noiseSimplex.cginc"
+
+float polygon(float2 pt, float2 center, float radius, int sides, float rotate, float edge_thickness){
+    pt -= center;
+
+    //Angle and radius from the current pixel /
+    float theta = atan2(pt.y, pt.x) + rotate;
+    float rad = PI2/float(sides);
+
+    // Shaping function that modulate the distance
+    float d = cos(floor(0.5 + theta/rad)*rad-theta)*length(pt);
+
+    return 1.0 - smoothstep(radius, radius + edge_thickness, d);
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float2 pos = float2( (((float2)id.xy)/(float)texResolution)-0.5 );
+    float2 center = 0;
+    float radius = 0.2;
+    float inPolygon = polygon( pos, center, radius, sides, time, 0.001 );
+    float noise = snoise(pos * 100);
+    float4 color = inPolygon * noise * fillColor + (1.0 - inPolygon) * clearColor;
+
+    Result[id.xy] = color;
+}

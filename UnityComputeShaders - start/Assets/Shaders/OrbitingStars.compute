@@ -1,0 +1,22 @@
+﻿#pragma kernel OrbitingStars
+
+float time;
+
+float random(float value, float seed = 0.546){
+	float res = frac(sin(value + seed) * 143758.5453);
+	return res;
+}
+
+float3 random3(float value){
+	return float3(
+		random(value, 3.9812),
+		random(value, 7.1536),
+		random(value, 5.7241)
+	);
+}
+
+[numthreads(64,1,1)]
+void OrbitingStars (uint3 id : SV_DispatchThreadID)
+{
+    
+}

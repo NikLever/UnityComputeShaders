@@ -1,0 +1,97 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Circles
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+
+struct circle
+{
+	float2 origin;
+	float2 velocity;
+	float radius;
+};
+
+StructuredBuffer<circle> circlesBuffer;
+
+float4 clearColor;
+float4 circleColor;
+int texResolution;
+int clearScreen = 0;
+float time;
+
+/*Returns pseudo random number in range 0 <= x < 1 */
+float random(float value, float seed = 0.546){
+	float random = (frac(sin(value + seed) * 143758.5453));// + 1.0)/2.0;
+	return random;
+}
+
+float2 random2(float value){
+	return float2(
+		random(value, 3.9812),
+		random(value, 7.1536)
+	);
+}
+
+void plot1( int x, int y, int2 centre){
+    Result[uint2(centre.x + x, centre.y + y)] = circleColor;
+}
+
+void plot8( int x, int y, int2 centre ) {
+	plot1(  x,  y, centre );  plot1(  y,  x, centre );
+	plot1(  x, -y, centre );  plot1(  y, -x, centre );
+	plot1( -x, -y, centre );  plot1( -y, -x, centre );
+	plot1( -x,  y, centre );  plot1( -y,  x, centre );
+}
+
+void drawCircle( int2 centre, int radius){
+	int x = 0;
+	int y = radius;
+	int d = 1 - radius;
+
+	while (x < y){
+		if (d < 0){
+			d += 2 * x + 3;
+		}else{
+			d += 2 * (x - y) + 5;
+			y--;
+		}
+		
+		plot8(x, y, centre);
+
+		x++;
+	}
+
+}
+
+void clear(){
+	uint2 index = uint2( 0, 0 );
+
+	for(int x=0; x<texResolution; x++){
+		for(int y=0; y<texResolution; y++){
+			index.x = x;
+			index.y = y;
+			Result[index] = clearColor;
+        }
+    }
+
+	clearScreen = 0;
+}
+
+[numthreads(32,1,1)]
+void Circles (uint3 id : SV_DispatchThreadID)
+{
+	if (clearScreen) clear();
+
+	int2 centre = (int2)(circlesBuffer[id.x].origin + circlesBuffer[id.x].velocity * time);
+	while (centre.x>texResolution) centre.x -= texResolution;
+	while (centre.x<0) centre.x += texResolution;
+	while (centre.y>texResolution) centre.y -= texResolution;
+	while (centre.y<0) centre.y += texResolution;
+	
+	uint radius = (int)circlesBuffer[id.x].radius;
+
+	drawCircle( centre, radius );
+}
+
+
