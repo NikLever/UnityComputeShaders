@@ -403,5 +403,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4e7a053c91f8403d98a3ad274d319c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: c1182b5da5bf94dda8a4a70a22120755, type: 3}
-  texResolution: 1024
+  shader: {fileID: 7200000, guid: 3d24b6c1406954c40974c10c77de3b4f, type: 3}
+  texResolution: 512
