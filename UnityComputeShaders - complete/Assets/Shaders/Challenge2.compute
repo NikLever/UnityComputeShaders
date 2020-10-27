@@ -1,10 +1,7 @@
-﻿// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+﻿#pragma kernel CSMain
 
 #define PI2 6.28318530718
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
 RWTexture2D<float4> Result;
 int texResolution;
 
@@ -22,7 +19,7 @@ float polygon(float2 pt, float2 center, float radius, int sides, float rotate, f
     float theta = atan2(pt.y, pt.x) + rotate;
     float rad = PI2/float(sides);
 
-    // Shaping function that modulate the distance
+    // Shaping function that modulate the distance / 
     float d = cos(floor(0.5 + theta/rad)*rad-theta)*length(pt);
 
     return 1.0 - smoothstep(radius, radius + edge_thickness, d);
@@ -36,7 +33,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float radius = 0.2;
     float inPolygon = polygon( pos, center, radius, sides, time, 0.001 );
     float noise = snoise(pos * 100);
-    float4 color = inPolygon * noise * fillColor + (1.0 - inPolygon) * clearColor;
+    float4 color = lerp(clearColor, fillColor * noise, inPolygon);
 
     Result[id.xy] = color;
 }

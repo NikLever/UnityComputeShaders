@@ -12,7 +12,6 @@ public class Challenge2 : MonoBehaviour
 
     int kernelHandle;
 
-    public int sides = 6;
     public Color fillColor = new Color(1.0f, 1.0f, 0.0f, 1.0f);
     public Color clearColor = new Color( 0, 0, 0.3f, 1.0f );
 
@@ -36,7 +35,6 @@ public class Challenge2 : MonoBehaviour
         shader.SetVector("fillColor", fillColor);
         shader.SetVector("clearColor", clearColor);
 
-        shader.SetInt("sides", sides);
         shader.SetInt("texResolution", texResolution);
         shader.SetTexture(kernelHandle, "Result", outputTexture);
        
@@ -45,11 +43,11 @@ public class Challenge2 : MonoBehaviour
 
     private void DispatchShader(int x, int y)
     {
+    	shader.SetFloat( "time", Time.time );
         shader.Dispatch(kernelHandle, x, y, 1);
     }
 
     void Update(){
-        shader.SetFloat( "time", Time.time );
         DispatchShader(texResolution / 8, texResolution / 8);
     }
 }
