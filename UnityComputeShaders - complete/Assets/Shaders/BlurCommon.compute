@@ -1,0 +1,16 @@
+﻿#ifndef BLUR_COMMON
+#define BLUR_COMMON
+
+#if SHADER_API_GLES3
+	#define threadCount 64
+    #define maxRadius 32
+#elif SHADER_API_METAL
+	#define threadCount 484
+    #define maxRadius 64
+#else
+	#define threadCount 1024
+    #define maxRadius 92
+
+#endif
+
+#endif
