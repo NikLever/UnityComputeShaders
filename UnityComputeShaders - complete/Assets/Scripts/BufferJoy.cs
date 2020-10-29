@@ -11,6 +11,7 @@ public class BufferJoy : MonoBehaviour
     RenderTexture outputTexture;
 
     int circlesHandle;
+    int clearHandle;
 
     public Color clearColor = new Color();
     public Color circleColor = new Color();
@@ -72,6 +73,8 @@ public class BufferJoy : MonoBehaviour
 
     private void InitShader()
     {
+    	clearHandle = shader.FindKernel("Clear");
+    	
         shader.SetVector( "clearColor", clearColor );
         shader.SetVector( "circleColor", circleColor );
         shader.SetInt( "texResolution", texResolution );
@@ -82,14 +85,16 @@ public class BufferJoy : MonoBehaviour
         shader.SetBuffer(circlesHandle, "circlesBuffer", buffer);
 
         shader.SetTexture( circlesHandle, "Result", outputTexture );
+        shader.SetTexture( clearHandle, "Result", outputTexture );
 
         rend.material.SetTexture("_MainTex", outputTexture);
     }
  
     private void DispatchKernel(int count)
     {
+    	shader.Dispatch(clearHandle, texResolution/8, texResolution/8, 1);
         shader.SetFloat("time", Time.time);
-        shader.SetBool("clearScreen", true );
+        //shader.SetBool("clearScreen", true );
         shader.Dispatch(circlesHandle, count, 1, 1);
     }
 

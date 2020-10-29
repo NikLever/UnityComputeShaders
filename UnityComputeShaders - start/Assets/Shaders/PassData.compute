@@ -53,8 +53,8 @@ void drawCircle( int2 centre, int radius ) {
 [numthreads(1,1,1)]
 void Circles (uint3 id : SV_DispatchThreadID)
 {
-	int2 centre = (int2)(random2((float)id.x) * (float)texResolution);
-	int radius = (int)(random((float)id.x) * 30);
+	int2 centre = (texResolution >> 1);
+	int radius = 80;
 	drawCircle( centre, radius );
 }
 

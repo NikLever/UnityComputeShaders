@@ -1,9 +1,10 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel Circles
+#pragma kernel Clear
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
-RWTexture2D<float4> Result;
+shared RWTexture2D<float4> Result;
 
 float4 clearColor;
 float4 circleColor;
@@ -54,20 +55,6 @@ void drawCircle( int2 centre, int radius ) {
 	}
 }
 
-void clear(){
-	uint2 index = uint2( 0, 0 );
-
-	for(int x=0; x<texResolution; x++){
-		index.x = x;
-		for(int y=0; y<texResolution; y++){
-			index.y = y;
-			Result[index] = clearColor;
-        }
-    }
-
-	clearTexture = 0;
-}
-
 [numthreads(32,1,1)]
 void Circles (uint3 id : SV_DispatchThreadID)
 {
@@ -77,6 +64,12 @@ void Circles (uint3 id : SV_DispatchThreadID)
 	int radius = (int)(random((float)id.x) * 30);
 	
 	drawCircle( centre, radius );
+}
+
+[numthreads(8,8,1)]
+void Clear (uint3 id : SV_DispatchThreadID)
+{
+	Result[id.xy] = clearColor;
 }
 
 
