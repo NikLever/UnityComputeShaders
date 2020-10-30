@@ -509,14 +509,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1647938309}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 57e1036fe4d0a41c0abc6ba2fab74533, type: 3}
+  m_Script: {fileID: 11500000, guid: 08ff1e652fb72471ea449ae518821b80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 1ce322ccd86544eb6828c7ea2851b8ae, type: 3}
-  blurRadius: 10
-  radius: 25.4
-  softenEdge: 51.3
-  shade: 0.521
+  shader: {fileID: 7200000, guid: 6c24851d887634bce99cb5cd54829a81, type: 3}
+  blurRadius: 15
+  radius: 16
+  softenEdge: 38.5
+  shade: 0.701
   trackedObject: {fileID: 190369478}
 --- !u!1 &1775990536
 GameObject:

@@ -91,19 +91,19 @@ public class BasePP : MonoBehaviour
         shader.SetTexture(kernelHandle, "output", output);
     }
 
-    void OnEnable()
+    protected virtual void OnEnable()
     {
         Init();
         CreateTextures();
     }
 
-    void OnDisable()
+    protected virtual void OnDisable()
     {
         ClearTextures();
         init = false;
     }
 
-    void OnDestroy()
+    protected virtual void OnDestroy()
     {
         ClearTextures();
         init = false;
