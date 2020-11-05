@@ -312,7 +312,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e37798e49f254338ad105fc80880a48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sphereCount: 1000
+  starCount: 1000
   shader: {fileID: 7200000, guid: d5d30d9082f1a4b6184e67c4a0a25422, type: 3}
   prefab: {fileID: 8765332503600944482, guid: 78a47e876f86a4f5cba6e7d26269d2cd, type: 3}
 --- !u!4 &1677440273

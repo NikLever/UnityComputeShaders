@@ -9,7 +9,6 @@ shared RWTexture2D<float4> Result;
 float4 clearColor;
 float4 circleColor;
 int texResolution;
-int clearTexture = 0;
 float time;
 
 /*Returns pseudo random number in range 0 <= x < 1 */
@@ -58,8 +57,6 @@ void drawCircle( int2 centre, int radius ) {
 [numthreads(32,1,1)]
 void Circles (uint3 id : SV_DispatchThreadID)
 {
-	if (clearTexture) clear();
-
 	int2 centre = (int2)(random2((float)id.x + time) * (float)texResolution);
 	int radius = (int)(random((float)id.x) * 30);
 	

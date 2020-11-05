@@ -40,6 +40,8 @@ public class BufferJoy : MonoBehaviour
 
     private void InitShader()
     {
+    	clearHandle = shader.FindKernel("Clear");
+    	
         shader.SetVector( "clearColor", clearColor );
         shader.SetVector( "circleColor", circleColor );
         shader.SetInt( "texResolution", texResolution );
