@@ -7,16 +7,16 @@ RWTexture2D<float4> Result;
 int texResolution;
 float time;
 
-float random (float2 pt, float seed) {
+float random (float2 pt) {
     const float a = 12.9898;
     const float b = 78.233;
     const float c = 43758.543123;
-    return frac(sin(dot(pt, float2(a, b)) + seed) * c );
+    return frac(sin(dot(pt, float2(a, b))) * c );
 }
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     float4 white = 1;
-    Result[id.xy] = random(((float2)id.xy)/(float)texResolution, time) * white;
+    Result[id.xy] = random(((float2)id.xy)/(float)texResolution) * white;
 }
