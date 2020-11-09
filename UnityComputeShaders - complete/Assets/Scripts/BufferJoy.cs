@@ -54,7 +54,7 @@ public class BufferJoy : MonoBehaviour
         circleData = new Circle[total];
 
         float speed = 100;
-        float halfSpeed = 10.0f * 0.5f;
+        float halfSpeed = speed * 0.5f;
         float minRadius = 10.0f;
         float maxRadius = 30.0f;
         float radiusRange = maxRadius - minRadius;
