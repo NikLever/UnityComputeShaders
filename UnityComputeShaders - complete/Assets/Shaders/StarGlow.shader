@@ -8,7 +8,7 @@
         [KeywordEnum(ADDITIVE, SCREEN, COLORED_ADDITIVE, COLORED_SCREEN, DEBUG)]
         _COMPOSITE_TYPE("Composite Type", Float) = 0
 
-        _Parameter("(Threhold, Intensity, Attenuation, -)", Vector) = (0.8, 1.0, 0.95, 0.0)
+        _BrightnessSettings("(Threshold, Intensity, Attenuation, -)", Vector) = (0.8, 1.0, 0.95, 0.0)
     }
     SubShader
     {
@@ -19,11 +19,11 @@
         sampler2D _MainTex;
         float4    _MainTex_ST;
         float4    _MainTex_TexelSize;
-        float4    _Parameter;
+        float4    _BrightnessSettings;
 
-        #define BRIGHTNESS_THRESHOLD _Parameter.x
-        #define INTENSITY            _Parameter.y
-        #define ATTENUATION          _Parameter.z
+        #define BRIGHTNESS_THRESHOLD _BrightnessSettings.x
+        #define INTENSITY            _BrightnessSettings.y
+        #define ATTENUATION          _BrightnessSettings.z
 
         ENDCG
 

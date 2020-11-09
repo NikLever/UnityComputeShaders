@@ -158,8 +158,8 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 82a2a8b2d30a6421e9f74773d8cd889a, type: 2}
-  - {fileID: 2100000, guid: 82a2a8b2d30a6421e9f74773d8cd889a, type: 2}
+  - {fileID: 2100000, guid: 0741d2c8cf6adc64391c4d288d20bb58, type: 2}
+  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -198,7 +198,7 @@ ParticleSystemRenderer:
   m_ApplyActiveColorSpace: 1
   m_AllowRoll: 1
   m_VertexStreams: 00010304
-  m_Mesh: {fileID: -2124705421725058983, guid: fbf0d03e5b1974728b8a0ef75c6e36b2, type: 3}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   m_Mesh1: {fileID: 0}
   m_Mesh2: {fileID: 0}
   m_Mesh3: {fileID: 0}
@@ -857,7 +857,7 @@ ParticleSystem:
     m_MeshMaterialIndex: 0
     m_MeshNormalOffset: 0
     m_MeshSpawn:
-      mode: 1
+      mode: 0
       spread: 0
       speed:
         serializedVersion: 2
@@ -912,8 +912,7 @@ ParticleSystem:
           m_PreInfinity: 2
           m_PostInfinity: 2
           m_RotationOrder: 4
-    m_Mesh: {fileID: -2124705421725058983, guid: 6304418850071482d85e4d5a06e8fb9f,
-      type: 3}
+    m_Mesh: {fileID: 0}
     m_MeshRenderer: {fileID: 0}
     m_SkinnedMeshRenderer: {fileID: 0}
     m_Sprite: {fileID: 0}
@@ -1323,7 +1322,7 @@ ParticleSystem:
     x:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 1.7453293
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -4998,15 +4997,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e23bce2a07d82744a6626dfe2a18517, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  material: {fileID: 2100000, guid: 777412ced6fd53845ace1e4f73e236bb, type: 2}
   compositeType: 0
-  threshold: 0.92
-  intensity: 2.4
+  threshold: 1
+  intensity: 1.3
   divide: 7
   iteration: 2
   attenuation: 0.7
   angleOfStreak: 30
   numOfStreak: 5
-  material: {fileID: 2100000, guid: 777412ced6fd53845ace1e4f73e236bb, type: 2}
   color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!20 &2144986266
 Camera:
