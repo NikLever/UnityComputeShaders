@@ -1,0 +1,82 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel BrightnessPass
+#pragma kernel BlurPass
+#pragma kernel CompositePass
+#pragma kernel FinalPass
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+shared Texture2D<float4>source;
+shared RWTexture2D<float4> brightnessTex;
+shared RWTexture2D<float4> blur1Tex;
+shared RWTexture2D<float4> blur2Tex;
+shared RWTexture2D<float4> compositeTex;
+shared RWTexture2D<float4> output;
+
+float threshold;
+float intensity;
+float attenuation;
+float4 blurSettings;
+float4 color;
+
+int divide;
+int iteration;
+int srcTexID;
+
+int streakCount;
+float streakAngle;
+
+float4 offset;
+
+[numthreads(8,8,1)]
+void BrightnessPass (uint3 id : SV_DispatchThreadID)
+{
+    uint2 texCoord = uint2((float2)id.xy*(float)divide);
+    float3 srcColor = source[texCoord].rgb;
+    brightnessTex[id.xy] = float4(max(srcColor - threshold, 0) * intensity, 1);
+}
+
+[numthreads(8,8,1)]
+void BlurPass (uint3 id : SV_DispatchThreadID)
+{
+    half3 color    = 0;
+    uint2 texCoord = uint2(id.xy);
+    half3 src;
+
+    for (int j=0; j<4; j++)
+    {
+        src = blur1Tex[texCoord].rgb;
+        color += saturate(src * pow(abs(attenuation), abs(blurSettings.z) * j));
+        texCoord += (uint2)blurSettings.xy;
+    }
+
+    blur2Tex[id.xy] = float4(color, 1.0);
+}
+
+[numthreads(8,8,1)]
+void CompositePass (uint3 id : SV_DispatchThreadID)
+{
+    float3 src = blur2Tex[id.xy].rgb;
+    float3 dest = compositeTex[id.xy].rgb;
+    float3 color = src * (1 - dest) + dest;
+    compositeTex[id.xy] = float4(src, 1.0);
+}
+
+[numthreads(8,8,1)]
+void FinalPass (uint3 id : SV_DispatchThreadID)
+{
+    float4 srcColor = source[id.xy];
+    uint2 texCoord = uint2((float2)id.xy/(float)divide);
+    float4 compColor = compositeTex[texCoord];
+
+    //colored 
+    //compColor.rgb = (compColor.r + compColor.g + compColor.b) * 0.3333 * color.rgb;
+    
+    //screen
+    //float3 color = saturate(srcColor + compColor - saturate(srcColor * compColor));
+
+    //additive 
+    float3 color = saturate(srcColor + compColor);
+
+    output[id.xy] = float4(color, 1.0);
+}

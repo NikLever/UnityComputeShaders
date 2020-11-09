@@ -48,7 +48,7 @@ public class BasePP : MonoBehaviour
         init = true;
     }
 
-    void ClearTexture(ref RenderTexture textureToClear)
+    protected void ClearTexture(ref RenderTexture textureToClear)
     {
         if (null != textureToClear)
         {
@@ -63,9 +63,9 @@ public class BasePP : MonoBehaviour
         ClearTexture(ref renderedSource);
     }
 
-    protected void CreateTexture(ref RenderTexture textureToMake)
+    protected void CreateTexture(ref RenderTexture textureToMake, int divide=1)
     {
-        textureToMake = new RenderTexture(texSize.x, texSize.y, 0);
+        textureToMake = new RenderTexture(texSize.x/divide, texSize.y/divide, 0);
         textureToMake.enableRandomWrite = true;
         textureToMake.Create();
     }
