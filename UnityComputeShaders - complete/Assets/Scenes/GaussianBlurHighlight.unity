@@ -513,9 +513,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 6c24851d887634bce99cb5cd54829a81, type: 3}
-  blurRadius: 15
-  radius: 16
-  softenEdge: 38.5
+  blurRadius: 23
+  radius: 28
+  softenEdge: 24
   shade: 0.701
   trackedObject: {fileID: 190369478}
 --- !u!1 &1775990536
