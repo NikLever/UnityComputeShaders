@@ -4,6 +4,7 @@ using System.Collections;
 public class MeshDeform : MonoBehaviour
 {
     public ComputeShader shader;
+    [Range(0.5f, 2.0f)]
     public float radius = 1.0f;
 
     public struct Vertex
@@ -39,7 +40,7 @@ public class MeshDeform : MonoBehaviour
             InitShader();
         }
     }
-
+	
     private bool InitData()
     {
         kernelHandle = shader.FindKernel("CSMain");
@@ -53,7 +54,7 @@ public class MeshDeform : MonoBehaviour
         }
 
         InitVertexArrays(mf.mesh);
-        InitGPUBuffers(mf.mesh);
+        InitGPUBuffers();
 
         mesh = mf.mesh;
 
@@ -74,7 +75,7 @@ public class MeshDeform : MonoBehaviour
         }
     }
 
-    private void InitGPUBuffers(Mesh mesh)
+    private void InitGPUBuffers()
     {
         vertexBuffer = new ComputeBuffer(vertexArray.Length, sizeof(float) * 6);
         vertexBuffer.SetData(vertexArray);
@@ -91,7 +92,6 @@ public class MeshDeform : MonoBehaviour
     private void InitShader()
     {
         shader.SetFloat("radius", radius);
-
     }
 
     void GetVerticesFromGPU()
@@ -112,6 +112,7 @@ public class MeshDeform : MonoBehaviour
     void Update(){
         if (shader)
         {
+        	shader.SetFloat("radius", radius);
             float delta = (Mathf.Sin(Time.time) + 1)/ 2;
             shader.SetFloat("delta", delta);
             shader.Dispatch(kernelHandle, vertexArray.Length, 1, 1);
