@@ -30,7 +30,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
     float2 pos = float2( (((float2)id.xy)/(float)texResolution)-0.5 );
     float2 center = 0;
-    float radius = 0.2;
+    float radius = 0.15;
     float inPolygon = polygon( pos, center, radius, sides, time, 0.001 );
     float noise = snoise(pos * 100);
     float4 color = lerp(clearColor, fillColor * noise, inPolygon);
