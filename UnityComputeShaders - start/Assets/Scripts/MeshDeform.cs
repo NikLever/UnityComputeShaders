@@ -9,6 +9,7 @@ public class MeshDeform : MonoBehaviour
 	public float radius;
 	
     int kernelHandle;
+    Mesh mesh;
     
     // Use this for initialization
     void Start()
