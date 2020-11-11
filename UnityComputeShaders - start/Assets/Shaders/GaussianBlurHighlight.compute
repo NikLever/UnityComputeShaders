@@ -1,0 +1,62 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel HorzPass
+#pragma kernel Highlight
+
+shared Texture2D<float4> source;
+shared RWTexture2D<float4> horzOutput;
+RWTexture2D<float4> output;
+float radius;
+float edgeWidth;
+float shade;
+float4 center;
+int blurRadius;
+shared StructuredBuffer<float> weights;
+
+float inCircle( float2 pt, float2 center, float radius, float edgeWidth ){
+    float len = length(pt - center);
+    return 1.0 - smoothstep(radius-edgeWidth, radius, len);
+}
+
+[numthreads(8, 8, 1)]
+void HorzPass(uint3 id : SV_DispatchThreadID)
+{
+    int left = max(0, (int)id.x-blurRadius);
+    int count = min(blurRadius, (int)id.x) + min(blurRadius, source.Length.x - (int)id.x);
+    float4 color = 0;
+
+    uint2 index = uint2((uint)left, id.y);
+
+    [unroll(100)]
+    for(int x=0; x<count; x++){
+        color += source[index] * weights[x];
+        index.x++;
+    }
+
+    horzOutput[id.xy] = color;
+
+}
+
+[numthreads(8, 8, 1)]
+void Highlight(uint3 id : SV_DispatchThreadID)
+{
+    //Vert blur
+    int top = max(0, (int)id.y-blurRadius);
+    int count = min(blurRadius, (int)id.y) + min(blurRadius, source.Length.y - (int)id.y);
+    float4 blurColor = 0;
+
+    uint2 index = uint2(id.x, (uint)top);
+
+    [unroll(100)]
+    for(int y=0; y<count; y++){
+        blurColor += source[index] * weights[y];
+        index.y++;
+    }
+
+    float4 srcColor = source[id.xy];
+    float4 shadedBlurColor = blurColor * shade;
+    float highlight = inCircle( (float2)id.xy, center.xy, radius, edgeWidth);
+    float4 color = lerp( shadedBlurColor, srcColor, highlight );
+
+    output[id.xy] = color;
+
+}

@@ -70,7 +70,7 @@ public class BlurHighlight : BasePP
 
     protected override void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        if (!init || shader == null)
+        if (shader == null)
         {
             Graphics.Blit(source, destination);
         }

@@ -210,6 +210,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d874261ddf5224bbb9f83fd562ac6793, type: 3}
+--- !u!4 &190369478 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4341065987587142778, guid: d874261ddf5224bbb9f83fd562ac6793,
+    type: 3}
+  m_PrefabInstance: {fileID: 190369477}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &258030428
 GameObject:
   m_ObjectHideFlags: 0
@@ -407,6 +413,7 @@ GameObject:
   - component: {fileID: 1647938311}
   - component: {fileID: 1647938310}
   - component: {fileID: 1647938313}
+  - component: {fileID: 1647938314}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -493,6 +500,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 955442739}
   limitsX: []
+--- !u!114 &1647938314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1647938309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08ff1e652fb72471ea449ae518821b80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shader: {fileID: 7200000, guid: 6c24851d887634bce99cb5cd54829a81, type: 3}
+  blurRadius: 23
+  radius: 28
+  softenEdge: 24
+  shade: 0.701
+  trackedObject: {fileID: 190369478}
 --- !u!1 &1775990536
 GameObject:
   m_ObjectHideFlags: 0

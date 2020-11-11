@@ -109,9 +109,9 @@ public class GaussianBlurHighlight : BasePP
         Graphics.Blit(output, destination);
     }
 
-    void OnRenderImage(RenderTexture source, RenderTexture destination)
+    protected override void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        if (shader == null)
+        if (!init || shader == null)
         {
             Graphics.Blit(source, destination);
         }
@@ -125,7 +125,7 @@ public class GaussianBlurHighlight : BasePP
                 shader.SetVector("center", center);
             }
             bool resChange = false;
-            CheckKernelAndResolution(out resChange);
+            CheckResolution(out resChange);
             if (resChange) SetProperties();
             DispatchWithSource(ref source, ref destination);
         }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteInEditMode]
-public class BlurHighlight : BasePP
+public class GaussianBlurHighlight : BasePP
 {
     [Range(0, 50)]
     public int blurRadius = 20;
@@ -16,6 +16,7 @@ public class BlurHighlight : BasePP
     public Transform trackedObject;
 
     Vector4 center;
+    ComputeBuffer weightsBuffer = null;
 
     RenderTexture horzOutput = null;
     int kernelHorzPassID;
@@ -29,6 +30,43 @@ public class BlurHighlight : BasePP
 
     }
 
+    float[] SetWeightsArray(int radius, float sigma)
+    {
+        int total = radius * 2 + 1;
+        float[] weights = new float[total];
+        float sum = 0.0f;
+
+        for (int n=0; n<radius; n++)
+        {
+            float weight = 0.39894f * Mathf.Exp(-0.5f * n * n / (sigma * sigma)) / sigma;
+            weights[radius + n] = weight;
+            weights[radius - n] = weight;
+            if (n != 0)
+                sum += weight * 2.0f;
+            else
+                sum += weight;
+        }
+        // normalize kernels
+        for (int i=0; i<total; i++) weights[i] /= sum;
+        
+        return weights;
+    }
+
+    private void UpdateWeightsBuffer()
+    {
+        if (weightsBuffer != null)
+            weightsBuffer.Dispose();
+
+        float sigma = (float)blurRadius / 1.5f;
+
+        weightsBuffer = new ComputeBuffer(blurRadius * 2 + 1, sizeof(float));
+        float[] blurWeights = SetWeightsArray(blurRadius, sigma);
+        weightsBuffer.SetData(blurWeights);
+
+        shader.SetBuffer(kernelHorzPassID, "weights", weightsBuffer);
+        shader.SetBuffer(kernelHandle, "weights", weightsBuffer);
+    }
+
     protected override void CreateTextures()
     {
         base.CreateTextures();
@@ -39,12 +77,15 @@ public class BlurHighlight : BasePP
         shader.SetTexture(kernelHorzPassID, "horzOutput", horzOutput);
         shader.SetTexture(kernelHandle, "horzOutput", horzOutput);
     }
+
     private void OnValidate()
     {
         if(!init)
             Init();
            
         SetProperties();
+
+        UpdateWeightsBuffer();
     }
 
     protected void SetProperties()
@@ -70,7 +111,7 @@ public class BlurHighlight : BasePP
 
     protected override void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        if (!init || shader == null)
+        if (shader == null)
         {
             Graphics.Blit(source, destination);
         }
@@ -90,4 +131,21 @@ public class BlurHighlight : BasePP
         }
     }
 
+    protected override void OnEnable()
+    {
+        base.OnEnable();
+        UpdateWeightsBuffer();
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
+        if (weightsBuffer != null) weightsBuffer.Dispose();
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (weightsBuffer != null) weightsBuffer.Dispose();
+    }
 }
