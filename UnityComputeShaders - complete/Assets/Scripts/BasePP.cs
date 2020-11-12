@@ -140,7 +140,6 @@ public class BasePP : MonoBehaviour
             CheckResolution(out _);
             DispatchWithSource(ref source, ref destination);
         }
-        Graphics.Blit(source, destination);
     }
 
 }

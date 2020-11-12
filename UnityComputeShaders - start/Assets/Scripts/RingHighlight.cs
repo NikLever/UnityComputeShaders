@@ -46,7 +46,6 @@ public class RingHighlight : BasePP
             CheckResolution(out _);
             DispatchWithSource(ref source, ref destination);
         }
-        Graphics.Blit(source, destination);
     }
 
 }
