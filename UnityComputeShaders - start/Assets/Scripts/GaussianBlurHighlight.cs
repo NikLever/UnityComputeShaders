@@ -35,10 +35,11 @@ public class GaussianBlurHighlight : BasePP
         int total = radius * 2 + 1;
         float[] weights = new float[total];
         float sum = 0.0f;
+        float c = 1 / Mathf.Sqrt(2 * Mathf.PI * sigma * sigma);
 
         for (int n=0; n<radius; n++)
         {
-            float weight = 0.39894f * Mathf.Exp(-0.5f * n * n / (sigma * sigma)) / sigma;
+            float weight = c * Mathf.Exp(-0.5f * n * n / (sigma * sigma));
             weights[radius + n] = weight;
             weights[radius - n] = weight;
             if (n != 0)
