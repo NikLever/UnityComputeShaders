@@ -1,0 +1,41 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+Texture2D<float4> source;
+RWTexture2D<float4> output;
+float radius;
+float edgeWidth;
+int lines;
+float4 tintColor;
+float tintStrength;
+
+float inCircle( float2 pt, float2 center, float radius, float edgeWidth ){
+    float len = length(pt - center);
+    return 1.0 - smoothstep(radius-edgeWidth, radius, len);
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    float3 srcColor = source[id.xy].rgb;
+    float3 grayScale = (srcColor.r + srcColor.g + srcColor.b) / 3.0;
+    float3 tinted = grayScale * tintColor.rgb;
+    float3 finalColor = lerp(srcColor, tinted, tintStrength);
+
+    float uvY = (float)id.y/(float)source.Length.y;
+    float3 black = 0;        
+    float scanline = saturate(smoothstep(0.2, 0.4, frac(uvY * lines)) + 0.4);
+    finalColor = lerp(black, finalColor, scanline);
+
+    float2 pt = (float2)id.xy;
+    float2 center = float2( source.Length * 0.5 );
+    center.x -= radius * 0.7;
+    float leftLense = inCircle(pt, center, radius, edgeWidth);
+    center.x += radius * 1.4;
+    float rightLense = inCircle(pt, center,radius, edgeWidth);
+    float inVision = saturate(leftLense + rightLense);
+
+    finalColor = lerp(black, finalColor, inVision);
+           
+    output[id.xy] = float4(finalColor, 1);
+}
