@@ -48,7 +48,7 @@ void Highlight(uint3 id : SV_DispatchThreadID)
 
     [unroll(100)]
     for(int y=0; y<count; y++){
-        blurColor += source[index];
+        blurColor += horzOutput[index];
         index.y++;
     }
 

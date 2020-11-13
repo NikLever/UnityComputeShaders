@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteInEditMode]
-public class GaussianBlurHighlight : BasePP
+public class GaussianBlurHighlight : BaseCompletePP
 {
     [Range(0, 50)]
     public int blurRadius = 20;

@@ -513,10 +513,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 1ce322ccd86544eb6828c7ea2851b8ae, type: 3}
-  blurRadius: 1
-  radius: 25.4
+  blurRadius: 11
+  radius: 25.5
   softenEdge: 51.3
-  shade: 0.521
+  shade: 0.735
   trackedObject: {fileID: 190369478}
 --- !u!1 &1775990536
 GameObject:
