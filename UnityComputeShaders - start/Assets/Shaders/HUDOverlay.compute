@@ -19,17 +19,10 @@ float sweep(float2 pt, float2 center, float radius, float line_width, float edge
     float theta = time;
     float2 p = float2(cos(theta), -sin(theta))*radius;
     float h = clamp( dot(d,p)/dot(p,p), 0.0, 1.0 );
+    //h = dot(d,p)/dot(p,p);
     float l = length(d - p*h);
 
-    float gradient = 0.0;
-    const float gradient_angle = PI * 0.5;
-
-    if (length(d)<radius){
-        float angle = fmod(theta + atan2(d.y, d.x), PI2);
-        gradient = clamp(gradient_angle - angle, 0.0, gradient_angle)/gradient_angle * 0.5;
-    }
-
-    return gradient + 1.0 - smoothstep(line_width, line_width+edge_thickness, l);
+    return 1.0 - smoothstep(line_width, line_width+edge_thickness, l);
 }
 
 float circle(float2 pt, float2 center, float radius, float line_width, float edge_thickness){
@@ -52,7 +45,7 @@ float polygon(float2 pt, float2 center, float radius, int sides, float rotate, f
     float theta = atan2(pt.y, pt.x) + rotate;
     float rad = PI2/float(sides);
 
-    // Shaping function that modulate the distance
+    // Shaping function that modulate the distance    
     float d = cos(floor(0.5 + theta/rad)*rad-theta)*length(pt);
 
     return 1.0 - smoothstep(radius, radius + edge_thickness, d);
@@ -74,19 +67,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         uv /= (float)source.Length.x;
         center.y /= aspectRatio;
     }
-    float3 color = onLine(uv.y, center.y, 0.002, 0.001) * axisColor.rgb;//xAxis 
-    color += onLine(uv.x, center.x, 0.002, 0.001) * axisColor.rgb;//yAxis  
-    
-    color += circle(uv, center, 0.45, 0.002, 0.001) * axisColor.rgb;
-    color += circle(uv, center, 0.3, 0.002, 0.001) * axisColor.rgb;
-    color += circle(uv, center, 0.15, 0.002, 0.001) * axisColor.rgb;
-    color += sweep(uv, center, 0.45, 0.003, 0.001) * sweepColor.rgb;
-    float offset = sin(time*4) * 0.05 + 0.5;
-    color += polygon(uv, float2(center.x + offset, center.y), 0.008, 3, 0.0, 0.001) * white;
-    color += polygon(uv, float2(center.x - offset, center.y), 0.008, 3, PI, 0.001) * white; 
+
+    float3 color = onLine(uv.y, center.y, 0.002, 0.001) * axisColor.rgb;//xAxis
+    //TO DO: Add code here
 
     float alpha = saturate(color.r + color.g + color.b);
     float3 finalColor = lerp(source[id.xy].rgb, color, alpha);
- 
+
     output[id.xy] = float4(finalColor, 1.0);
 }

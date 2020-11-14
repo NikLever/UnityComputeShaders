@@ -503,15 +503,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1647938309}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2028f6f58aa2447ebbd325afc846971a, type: 3}
+  m_Script: {fileID: 11500000, guid: c180687713f6c40daa26513669e4a04b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: d17f41014246c4a01a09b636c4825554, type: 3}
-  radius: 51
-  tintStrength: 0.87
-  softenEdge: 18
-  tint: {r: 0.2696244, g: 0.7830189, b: 0.2696244, a: 1}
-  lines: 68
+  shader: {fileID: 7200000, guid: 6a48958941efd4a9b8ad73739a7644fc, type: 3}
 --- !u!1 &1775990536
 GameObject:
   m_ObjectHideFlags: 0

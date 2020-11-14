@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteInEditMode]
-public class NightVision : BasePP
+public class NightVision : BaseCompletePP
 {
     [Range(0.0f, 100.0f)]
     public float radius = 70;
@@ -32,10 +32,10 @@ public class NightVision : BasePP
         shader.SetFloat("tintStrength", tintStrength);
         shader.SetInt("lines", lines);
     }
-    
-    protected override void OnRenderImage(RenderTexture source, RenderTexture destination){
-    	shader.SetFloat("time", Time.time);
-    	base.OnRenderImage( source, destination );
+
+    protected override void OnRenderImage(RenderTexture source, RenderTexture destination)
+    {
+        shader.SetFloat("time", Time.time);
+        base.OnRenderImage(source, destination);
     }
-    
 }
