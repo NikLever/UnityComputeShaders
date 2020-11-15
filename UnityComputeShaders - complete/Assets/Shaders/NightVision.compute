@@ -23,8 +23,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float3 finalColor = lerp(srcColor, tinted, tintStrength);
 
     float uvY = (float)id.y/(float)source.Length.y;
-    float3 black = 0;        
-    float scanline = saturate(smoothstep(0.2, 0.4, frac(uvY * lines)) + 0.4);
+    float3 black = 0; 
+    float3 white = 1;       
+    float scanline = saturate(smoothstep(0.2, 0.4, frac(uvY * lines)) + 0.6);
     finalColor = lerp(black, finalColor, scanline);
 
     float2 pt = (float2)id.xy;
