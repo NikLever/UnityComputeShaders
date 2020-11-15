@@ -507,11 +507,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: d17f41014246c4a01a09b636c4825554, type: 3}
-  radius: 51
-  tintStrength: 0.87
+  radius: 50.1
+  tintStrength: 0.52
   softenEdge: 18
   tint: {r: 0.2696244, g: 0.7830189, b: 0.2696244, a: 1}
-  lines: 68
+  lines: 59
 --- !u!1 &1775990536
 GameObject:
   m_ObjectHideFlags: 0
