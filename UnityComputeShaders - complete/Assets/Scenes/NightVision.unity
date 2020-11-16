@@ -511,7 +511,7 @@ MonoBehaviour:
   tintStrength: 0.87
   softenEdge: 18
   tint: {r: 0.2696244, g: 0.7830189, b: 0.2696244, a: 1}
-  lines: 68
+  lines: 60
 --- !u!1 &1775990536
 GameObject:
   m_ObjectHideFlags: 0
