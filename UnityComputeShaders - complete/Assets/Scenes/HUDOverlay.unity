@@ -507,6 +507,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 6a48958941efd4a9b8ad73739a7644fc, type: 3}
+  axisColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+  sweepColor: {r: 0.21406509, g: 0.20852618, b: 0.6226415, a: 1}
 --- !u!1 &1775990536
 GameObject:
   m_ObjectHideFlags: 0
