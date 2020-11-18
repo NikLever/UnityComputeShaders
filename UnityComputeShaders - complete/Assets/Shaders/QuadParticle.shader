@@ -6,9 +6,10 @@
 
 	SubShader {
 		Pass {
-		Tags{ "RenderType" = "Opaque" }
+		Tags{ "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
 		LOD 200
-		Blend SrcAlpha one
+		Blend SrcAlpha OneMinusSrcAlpha
+		ZWrite Off
 
 		CGPROGRAM
 		// Physically based Standard lighting model, and enable shadows on all light types
