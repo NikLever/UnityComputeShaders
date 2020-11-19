@@ -44,7 +44,7 @@
 
             ENDCG
         }
-        
+
         // STEP:1
         // Get resized brightness image.
 

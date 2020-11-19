@@ -75,7 +75,86 @@ public class StarGlow : MonoBehaviour
 
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        Graphics.Blit(source, destination);
+        RenderTexture brightnessTex = RenderTexture.GetTemporary(source.width  / this.divide,
+                                                                 source.height / this.divide,
+                                                                 source.depth,
+                                                                 source.format);
+        RenderTexture blurredTex1   = RenderTexture.GetTemporary(brightnessTex.descriptor);
+        RenderTexture blurredTex2   = RenderTexture.GetTemporary(brightnessTex.descriptor);
+        RenderTexture compositeTex  = RenderTexture.GetTemporary(brightnessTex.descriptor);
+
+        // STEP:1
+        // Get resized brightness image.
+
+        material.SetVector
+        (brightnessSettingsID, new Vector3(threshold, this.intensity, this.attenuation));
+
+        Graphics.Blit(source, brightnessTex, material, 1);
+
+        // DEBUG:
+        //Graphics.Blit(brightnessTex, destination, material, 0);
+        //return;
+
+        // STEP:2
+        // Get blurred brightness image.
+
+        float angle = 360f / this.numOfStreak;
+
+        for (int x = 1; x <= this.numOfStreak; x++)
+        {
+            Vector2 offset =
+            (Quaternion.AngleAxis(angle * x + this.angleOfStreak, Vector3.forward) * Vector2.down).normalized;
+
+            material.SetVector(offsetID, offset);
+
+            material.SetInt   (iterationID, 1);
+
+            Graphics.Blit(brightnessTex, blurredTex1, material, 2);
+
+            // DEBUG:
+            //Graphics.Blit(blurredTex1, destination, material, 0);
+            //return;
+
+            for (int i = 2; i <= this.iteration; i++)
+            {
+                material.SetInt(iterationID, i);
+
+                Graphics.Blit(blurredTex1, blurredTex2, material, 2);
+
+                // DEBUG:
+                // Graphics.Blit(blurredTex2, destination, base.material, 0);
+                // return;
+
+                RenderTexture temp = blurredTex1;
+                blurredTex1 = blurredTex2;
+                blurredTex2 = temp;
+            }
+
+            Graphics.Blit(blurredTex1, compositeTex, material, 3);
+        }
+
+        // DEBUG:
+        //Graphics.Blit(compositeTex, destination, material, 0);
+        //return;
+
+        // STEP:3
+        // Composite.
+
+        material.EnableKeyword(StarGlow.CompositeTypes[this.compositeType]);
+        material.SetColor(compositeColorID, this.color);
+        material.SetTexture(compositeTexID, compositeTex);
+
+        Graphics.Blit(source, destination, material, 4);
+
+        // STEP:4
+        // Close.
+
+        material.DisableKeyword(StarGlow.CompositeTypes[this.compositeType]);
+
+        RenderTexture.ReleaseTemporary(brightnessTex);
+        RenderTexture.ReleaseTemporary(blurredTex1);
+        RenderTexture.ReleaseTemporary(blurredTex2);
+        RenderTexture.ReleaseTemporary(compositeTex);
     }
 
     #endregion Method
