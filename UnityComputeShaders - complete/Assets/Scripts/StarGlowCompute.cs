@@ -145,8 +145,8 @@ public class StarGlowCompute : BasePP
             blurSettings.z = 1;
 			shader.Dispatch(kernelBrightnessBlurID, groupSizeB.x, groupSizeB.y, 1);
 			//DEBUG:
-			Graphics.Blit(blur1Texture, destination);
-			return;
+			//Graphics.Blit(blur1Texture, destination);
+			//return;
 			
             for (int i = 2; i <= iteration; i++)
             {
@@ -159,6 +159,13 @@ public class StarGlowCompute : BasePP
                 //DEBUG
                 //Graphics.Blit(blur2Texture, destination);
                 //return;
+
+                //Swap textures
+                RenderTexture temp = blur1Texture;
+                blur1Texture = blur2Texture;
+                blur2Texture = temp;
+                shader.SetTexture(kernelBlurID, "blur1Tex", blur1Texture);
+                shader.SetTexture(kernelBlurID, "blur2Tex", blur2Texture);
             }
 
             //DEBUG
@@ -175,6 +182,7 @@ public class StarGlowCompute : BasePP
         // STEP:3
         // Composite.
         shader.Dispatch(kernelFinalID, groupSize.x, groupSize.y, 1);
+
         Graphics.Blit(output, destination);
     }
 

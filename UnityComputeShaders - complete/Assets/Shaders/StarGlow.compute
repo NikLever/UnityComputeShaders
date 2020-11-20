@@ -77,8 +77,8 @@ void CompositePass (uint3 id : SV_DispatchThreadID)
 	//Soft additive
     float3 src = blur1Tex[id.xy].rgb;
     float3 dest = compositeTex[id.xy].rgb;
-    float3 white = 1;
-    float3 color = src * (white - dest) + dest;
+    float blend = 1.0 - (dest.r + dest.g + dest.b) * 0.3333;
+    float3 color = dest + src * blend;
     compositeTex[id.xy] = float4(color, 1.0);
 }
 
