@@ -99,7 +99,7 @@
 
             float4 frag(v2f_starglow input) : SV_Target
             {
-                half4 color = half4(0, 0, 0, 0);
+                half4 color = 0;
                 half2 uv    = input.uv;
 
                 for (int j = 0; j < 4; j++)

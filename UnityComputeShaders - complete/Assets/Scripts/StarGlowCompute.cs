@@ -1,33 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class StarGlow : MonoBehaviour
+public class StarGlowCompute : MonoBehaviour
 {
-    #region Enum
-
-    public enum CompositeType
-    {
-        _COMPOSITE_TYPE_ADDITIVE         = 0,
-        _COMPOSITE_TYPE_SCREEN           = 1,
-        _COMPOSITE_TYPE_COLORED_ADDITIVE = 2,
-        _COMPOSITE_TYPE_COLORED_SCREEN   = 3,
-        _COMPOSITE_TYPE_DEBUG            = 4
-    }
-
-    #endregion Enum
-
+    
     #region Field
-
-    private static Dictionary<CompositeType, string> CompositeTypes = new Dictionary<CompositeType, string>()
-    {
-        { CompositeType._COMPOSITE_TYPE_ADDITIVE,         CompositeType._COMPOSITE_TYPE_ADDITIVE.ToString()         },
-        { CompositeType._COMPOSITE_TYPE_SCREEN,           CompositeType._COMPOSITE_TYPE_SCREEN.ToString()           },
-        { CompositeType._COMPOSITE_TYPE_COLORED_ADDITIVE, CompositeType._COMPOSITE_TYPE_COLORED_ADDITIVE.ToString() },
-        { CompositeType._COMPOSITE_TYPE_COLORED_SCREEN,   CompositeType._COMPOSITE_TYPE_COLORED_SCREEN.ToString()   },
-        { CompositeType._COMPOSITE_TYPE_DEBUG,            CompositeType._COMPOSITE_TYPE_DEBUG.ToString()            }
-    };
-
-    public StarGlow.CompositeType compositeType = StarGlow.CompositeType._COMPOSITE_TYPE_ADDITIVE;
 
     [Range(0, 1)]
     public float threshold = 1;

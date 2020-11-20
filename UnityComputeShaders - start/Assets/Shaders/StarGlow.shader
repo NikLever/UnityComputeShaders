@@ -4,10 +4,6 @@
     {
         [HideInInspector]
         _MainTex("Texture", 2D) = "white" {}
-
-        [KeywordEnum(ADDITIVE, SCREEN, COLORED_ADDITIVE, COLORED_SCREEN, DEBUG)]
-        _COMPOSITE_TYPE("Composite Type", Float) = 0
-
         _BrightnessSettings("(Threshold, Intensity, Attenuation, -)", Vector) = (0.8, 1.0, 0.95, 0.0)
     }
     SubShader
