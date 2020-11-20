@@ -40,9 +40,9 @@ void BrightnessPass (uint3 id : SV_DispatchThreadID)
 [numthreads(8,8,1)]
 void BrightnessBlurPass (uint3 id : SV_DispatchThreadID)
 {
-    half3 color    = 0;
+    float3 color    = 0;
     float2 texCoord = float2(id.xy);
-    half3 src;
+    float3 src;
 
     for (int j=0; j<4; j++)
     {
@@ -50,8 +50,8 @@ void BrightnessBlurPass (uint3 id : SV_DispatchThreadID)
         color += saturate(src * pow(abs(attenuation), abs(blurSettings.z) * j));
         texCoord += blurSettings.xy;
     }
-
-	blur1Tex[id.xy] = float4(color, 1.0);
+    
+    blur1Tex[id.xy] = float4(color, 1.0);
 }
 
 [numthreads(8,8,1)]

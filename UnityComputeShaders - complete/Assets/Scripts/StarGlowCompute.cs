@@ -70,7 +70,7 @@ public class StarGlowCompute : BasePP
         CreateTexture(ref compositeTexture, divide);
 
         shader.SetTexture(kernelHandle, "brightnessTex", brightnessTexture);
-        shader.SetTexture(kernelBrightnessBlurID, "brightnessTex", blur1Texture);
+        shader.SetTexture(kernelBrightnessBlurID, "brightnessTex", brightnessTexture);
         shader.SetTexture(kernelBrightnessBlurID, "blur1Tex", blur1Texture);
         shader.SetTexture(kernelBlurID, "blur1Tex", blur1Texture);
         shader.SetTexture(kernelBlurID, "blur2Tex", blur2Texture);
@@ -135,7 +135,6 @@ public class StarGlowCompute : BasePP
         // Set blurred brightness image.
         float angle = 360f / streakCount;
         Vector4 blurSettings = new Vector4();
-		RenderTexture temp;
 		
         for (int x = 1; x <= streakCount; x++)
         {
@@ -148,8 +147,6 @@ public class StarGlowCompute : BasePP
 			//DEBUG:
 			Graphics.Blit(blur1Texture, destination);
 			return;
-			
-			int texID = 1;
 			
             for (int i = 2; i <= iteration; i++)
             {
