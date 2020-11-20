@@ -1,10 +1,33 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class StarGlowCompute : MonoBehaviour
+public class StarGlow : MonoBehaviour
 {
-    
+    #region Enum
+
+    public enum CompositeType
+    {
+        _COMPOSITE_TYPE_ADDITIVE         = 0,
+        _COMPOSITE_TYPE_SCREEN           = 1,
+        _COMPOSITE_TYPE_COLORED_ADDITIVE = 2,
+        _COMPOSITE_TYPE_COLORED_SCREEN   = 3,
+        _COMPOSITE_TYPE_DEBUG            = 4
+    }
+
+    #endregion Enum
+
     #region Field
+
+    private static Dictionary<CompositeType, string> CompositeTypes = new Dictionary<CompositeType, string>()
+    {
+        { CompositeType._COMPOSITE_TYPE_ADDITIVE,         CompositeType._COMPOSITE_TYPE_ADDITIVE.ToString()         },
+        { CompositeType._COMPOSITE_TYPE_SCREEN,           CompositeType._COMPOSITE_TYPE_SCREEN.ToString()           },
+        { CompositeType._COMPOSITE_TYPE_COLORED_ADDITIVE, CompositeType._COMPOSITE_TYPE_COLORED_ADDITIVE.ToString() },
+        { CompositeType._COMPOSITE_TYPE_COLORED_SCREEN,   CompositeType._COMPOSITE_TYPE_COLORED_SCREEN.ToString()   },
+        { CompositeType._COMPOSITE_TYPE_DEBUG,            CompositeType._COMPOSITE_TYPE_DEBUG.ToString()            }
+    };
+
+    public StarGlow.CompositeType compositeType = StarGlow.CompositeType._COMPOSITE_TYPE_ADDITIVE;
 
     [Range(0, 1)]
     public float threshold = 1;
@@ -64,7 +87,7 @@ public class StarGlowCompute : MonoBehaviour
         // Get resized brightness image.
 
         material.SetVector
-        (brightnessSettingsID, new Vector3(threshold, intensity, attenuation));
+        (brightnessSettingsID, new Vector3(threshold, this.intensity, this.attenuation));
 
         Graphics.Blit(source, brightnessTex, material, 1);
 
@@ -75,16 +98,16 @@ public class StarGlowCompute : MonoBehaviour
         // STEP:2
         // Get blurred brightness image.
 
-        float angle = 360f / numOfStreak;
+        float angle = 360f / this.numOfStreak;
 
-        for (int x = 1; x <= numOfStreak; x++)
+        for (int x = 1; x <= this.numOfStreak; x++)
         {
             Vector2 offset =
-            (Quaternion.AngleAxis(angle * x + angleOfStreak, Vector3.forward) * Vector2.down).normalized;
+            (Quaternion.AngleAxis(angle * x + this.angleOfStreak, Vector3.forward) * Vector2.down).normalized;
 
             material.SetVector(offsetID, offset);
 
-            material.SetInt(iterationID, 1);
+            material.SetInt   (iterationID, 1);
 
             Graphics.Blit(brightnessTex, blurredTex1, material, 2);
 
@@ -117,8 +140,8 @@ public class StarGlowCompute : MonoBehaviour
         // STEP:3
         // Composite.
 
-        material.EnableKeyword(StarGlow.CompositeTypes[compositeType]);
-        material.SetColor(compositeColorID, color);
+        material.EnableKeyword(StarGlow.CompositeTypes[this.compositeType]);
+        material.SetColor(compositeColorID, this.color);
         material.SetTexture(compositeTexID, compositeTex);
 
         Graphics.Blit(source, destination, material, 4);
@@ -126,7 +149,7 @@ public class StarGlowCompute : MonoBehaviour
         // STEP:4
         // Close.
 
-        material.DisableKeyword(StarGlow.CompositeTypes[compositeType]);
+        material.DisableKeyword(StarGlow.CompositeTypes[this.compositeType]);
 
         RenderTexture.ReleaseTemporary(brightnessTex);
         RenderTexture.ReleaseTemporary(blurredTex1);

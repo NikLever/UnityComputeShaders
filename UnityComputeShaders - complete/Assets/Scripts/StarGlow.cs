@@ -87,7 +87,7 @@ public class StarGlow : MonoBehaviour
         // Get resized brightness image.
 
         material.SetVector
-        (brightnessSettingsID, new Vector3(threshold, this.intensity, this.attenuation));
+        (brightnessSettingsID, new Vector3(threshold, intensity, attenuation));
 
         Graphics.Blit(source, brightnessTex, material, 1);
 
@@ -98,16 +98,16 @@ public class StarGlow : MonoBehaviour
         // STEP:2
         // Get blurred brightness image.
 
-        float angle = 360f / this.numOfStreak;
+        float angle = 360f / numOfStreak;
 
-        for (int x = 1; x <= this.numOfStreak; x++)
+        for (int x = 1; x <= numOfStreak; x++)
         {
             Vector2 offset =
-            (Quaternion.AngleAxis(angle * x + this.angleOfStreak, Vector3.forward) * Vector2.down).normalized;
+            (Quaternion.AngleAxis(angle * x + angleOfStreak, Vector3.forward) * Vector2.down).normalized;
 
             material.SetVector(offsetID, offset);
 
-            material.SetInt   (iterationID, 1);
+            material.SetInt(iterationID, 1);
 
             Graphics.Blit(brightnessTex, blurredTex1, material, 2);
 
@@ -140,8 +140,8 @@ public class StarGlow : MonoBehaviour
         // STEP:3
         // Composite.
 
-        material.EnableKeyword(StarGlow.CompositeTypes[this.compositeType]);
-        material.SetColor(compositeColorID, this.color);
+        material.EnableKeyword(StarGlow.CompositeTypes[compositeType]);
+        material.SetColor(compositeColorID, color);
         material.SetTexture(compositeTexID, compositeTex);
 
         Graphics.Blit(source, destination, material, 4);
@@ -149,7 +149,7 @@ public class StarGlow : MonoBehaviour
         // STEP:4
         // Close.
 
-        material.DisableKeyword(StarGlow.CompositeTypes[this.compositeType]);
+        material.DisableKeyword(StarGlow.CompositeTypes[compositeType]);
 
         RenderTexture.ReleaseTemporary(brightnessTex);
         RenderTexture.ReleaseTemporary(blurredTex1);
