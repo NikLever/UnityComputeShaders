@@ -1,5 +1,6 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel BrightnessPass
+#pragma kernel BrightnessBlurPass
 #pragma kernel BlurPass
 #pragma kernel CompositePass
 #pragma kernel FinalPass
@@ -37,45 +38,58 @@ void BrightnessPass (uint3 id : SV_DispatchThreadID)
 }
 
 [numthreads(8,8,1)]
-void BlurPass (uint3 id : SV_DispatchThreadID)
+void BrightnessBlurPass (uint3 id : SV_DispatchThreadID)
 {
     half3 color    = 0;
-    uint2 texCoord = uint2(id.xy);
+    float2 texCoord = float2(id.xy);
     half3 src;
 
     for (int j=0; j<4; j++)
     {
-        src = blur1Tex[texCoord].rgb;
+    	src = brightnessTex[(uint2)texCoord].rgb;
         color += saturate(src * pow(abs(attenuation), abs(blurSettings.z) * j));
-        texCoord += (uint2)blurSettings.xy;
+        texCoord += blurSettings.xy;
     }
 
-    blur2Tex[id.xy] = float4(color, 1.0);
+	blur1Tex[id.xy] = float4(color, 1.0);
+}
+
+[numthreads(8,8,1)]
+void BlurPass (uint3 id : SV_DispatchThreadID)
+{
+    half3 color    = 0;
+    float2 texCoord = float2(id.xy);
+    half3 src;
+
+    for (int j=0; j<4; j++)
+    {
+    	src = blur1Tex[(uint2)texCoord].rgb;
+    	color += saturate(src * pow(abs(attenuation), abs(blurSettings.z) * j));
+        texCoord += blurSettings.xy;
+    }
+
+	blur2Tex[id.xy] = float4(color, 1.0);    
 }
 
 [numthreads(8,8,1)]
 void CompositePass (uint3 id : SV_DispatchThreadID)
 {
-    float3 src = blur2Tex[id.xy].rgb;
+	//Soft additive
+    float3 src = blur1Tex[id.xy].rgb;
     float3 dest = compositeTex[id.xy].rgb;
-    float3 color = src * (1 - dest) + dest;
-    compositeTex[id.xy] = float4(src, 1.0);
+    float3 white = 1;
+    float3 color = src * (white - dest) + dest;
+    compositeTex[id.xy] = float4(color, 1.0);
 }
 
 [numthreads(8,8,1)]
 void FinalPass (uint3 id : SV_DispatchThreadID)
 {
-    float4 srcColor = source[id.xy];
+    float3 srcColor = source[id.xy].rgb;
     uint2 texCoord = uint2((float2)id.xy/(float)divide);
-    float4 compColor = compositeTex[texCoord];
+    float3 compColor = compositeTex[texCoord].rgb;
 
-    //colored 
-    //compColor.rgb = (compColor.r + compColor.g + compColor.b) * 0.3333 * color.rgb;
-    
-    //screen
-    //float3 color = saturate(srcColor + compColor - saturate(srcColor * compColor));
-
-    //additive 
+    compColor = (compColor.r + compColor.g + compColor.b) * 0.3333 * color.rgb;
     float3 color = saturate(srcColor + compColor);
 
     output[id.xy] = float4(color, 1.0);

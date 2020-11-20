@@ -24,7 +24,7 @@ public class StarGlow : MonoBehaviour
     public float angleOfStreak = 0;
 
     [Range(1, 16)]
-    public int numOfStreak = 4;
+    public int numOfStreaks = 4;
 
     public Material material;
 

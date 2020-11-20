@@ -1,33 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class StarGlow : MonoBehaviour
+public class StarGlowCompute : BasePP
 {
-    #region Enum
-
-    public enum CompositeType
-    {
-        _COMPOSITE_TYPE_ADDITIVE         = 0,
-        _COMPOSITE_TYPE_SCREEN           = 1,
-        _COMPOSITE_TYPE_COLORED_ADDITIVE = 2,
-        _COMPOSITE_TYPE_COLORED_SCREEN   = 3,
-        _COMPOSITE_TYPE_DEBUG            = 4
-    }
-
-    #endregion Enum
 
     #region Field
-
-    private static Dictionary<CompositeType, string> CompositeTypes = new Dictionary<CompositeType, string>()
-    {
-        { CompositeType._COMPOSITE_TYPE_ADDITIVE,         CompositeType._COMPOSITE_TYPE_ADDITIVE.ToString()         },
-        { CompositeType._COMPOSITE_TYPE_SCREEN,           CompositeType._COMPOSITE_TYPE_SCREEN.ToString()           },
-        { CompositeType._COMPOSITE_TYPE_COLORED_ADDITIVE, CompositeType._COMPOSITE_TYPE_COLORED_ADDITIVE.ToString() },
-        { CompositeType._COMPOSITE_TYPE_COLORED_SCREEN,   CompositeType._COMPOSITE_TYPE_COLORED_SCREEN.ToString()   },
-        { CompositeType._COMPOSITE_TYPE_DEBUG,            CompositeType._COMPOSITE_TYPE_DEBUG.ToString()            }
-    };
-
-    public StarGlow.CompositeType compositeType = StarGlow.CompositeType._COMPOSITE_TYPE_ADDITIVE;
 
     [Range(0, 1)]
     public float threshold = 1;
@@ -36,7 +13,7 @@ public class StarGlow : MonoBehaviour
     public float intensity = 1;
 
     [Range(1, 20)]
-    public int divide = 3;
+    public int divide = 7;
 
     [Range(1, 5)]
     public int iteration = 5;
@@ -45,116 +22,163 @@ public class StarGlow : MonoBehaviour
     public float attenuation = 1;
 
     [Range(0, 360)]
-    public float angleOfStreak = 0;
+    public float streakAngle = 0;
 
     [Range(1, 16)]
-    public int numOfStreak = 4;
-
-    public Material material;
+    public int streakCount = 5;
 
     public Color color = Color.white;
-
-    private int compositeTexID   = 0;
-    private int compositeColorID = 0;
-    private int brightnessSettingsID   = 0;
-    private int iterationID      = 0;
-    private int offsetID         = 0;
 
     #endregion Field
 
     #region Method
 
+	int kernelBrightnessBlurID;
+    int kernelBlurID;
+    int kernelCompositeID;
+    int kernelFinalID;
+
+    RenderTexture brightnessTexture;
+    RenderTexture blur1Texture;
+    RenderTexture blur2Texture;
+    RenderTexture compositeTexture;
+
+    Vector2Int groupSizeB = new Vector2Int();
+
     void Start()
     {
-        compositeTexID   = Shader.PropertyToID("_CompositeTex");
-        compositeColorID = Shader.PropertyToID("_CompositeColor");
-        brightnessSettingsID   = Shader.PropertyToID("_BrightnessSettings");
-        iterationID      = Shader.PropertyToID("_Iteration");
-        offsetID         = Shader.PropertyToID("_Offset");
+        Init();
+    }
+
+    protected override void Init()
+    {
+        kernelName = "BrightnessPass";
+        kernelBrightnessBlurID = shader.FindKernel("BrightnessBlurPass");
+        kernelBlurID = shader.FindKernel("BlurPass");
+        kernelCompositeID = shader.FindKernel("CompositePass");
+        kernelFinalID = shader.FindKernel("FinalPass");
+        base.Init();
+    }
+
+    protected override void CreateTextures()
+    {
+        base.CreateTextures();
+        
+        CreateTexture(ref brightnessTexture, divide);
+        CreateTexture(ref blur1Texture, divide);
+        CreateTexture(ref blur2Texture, divide);
+        CreateTexture(ref compositeTexture, divide);
+
+        shader.SetTexture(kernelHandle, "brightnessTex", brightnessTexture);
+        shader.SetTexture(kernelBrightnessBlurID, "brightnessTex", blur1Texture);
+        shader.SetTexture(kernelBrightnessBlurID, "blur1Tex", blur1Texture);
+        shader.SetTexture(kernelBlurID, "blur1Tex", blur1Texture);
+        shader.SetTexture(kernelBlurID, "blur2Tex", blur2Texture);
+        shader.SetTexture(kernelCompositeID, "blur1Tex", blur1Texture);
+        shader.SetTexture(kernelCompositeID, "compositeTex", compositeTexture);
+        shader.SetTexture(kernelFinalID, "source", renderedSource);
+        shader.SetTexture(kernelFinalID, "compositeTex", compositeTexture);
+        shader.SetTexture(kernelFinalID, "output", output);
+    }
+
+    protected override void ClearTextures()
+    {
+        base.ClearTextures();
+
+        ClearTexture(ref brightnessTexture);
+        ClearTexture(ref blur1Texture);
+        ClearTexture(ref blur2Texture);
+        ClearTexture(ref compositeTexture);
+    }
+
+    private void OnValidate()
+    {
+        if (!init)
+            Init();
+
+        SetProperties();
+    }
+
+    protected void SetProperties()
+    {
+        shader.SetFloat("threshold", threshold);
+        shader.SetFloat("intensity", intensity);
+        shader.SetFloat("attenuation", attenuation);
+
+        shader.SetInt("divide", divide);
+        shader.SetInt("iteration", iteration);
+
+        shader.SetInt("streakCount", streakCount);
+        shader.SetFloat("streakAngle", streakAngle);
+
+        shader.SetVector("color", color);
+
+        groupSizeB.x = Mathf.CeilToInt((float)groupSize.x / (float)divide);
+        groupSizeB.y = Mathf.CeilToInt((float)groupSize.y / (float)divide);
     }
 
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        RenderTexture brightnessTex = RenderTexture.GetTemporary(source.width  / this.divide,
-                                                                 source.height / this.divide,
-                                                                 source.depth,
-                                                                 source.format);
-        RenderTexture blurredTex1   = RenderTexture.GetTemporary(brightnessTex.descriptor);
-        RenderTexture blurredTex2   = RenderTexture.GetTemporary(brightnessTex.descriptor);
-        RenderTexture compositeTex  = RenderTexture.GetTemporary(brightnessTex.descriptor);
+        if (!init) return;
+
+        //Copy the source to the renderedSource
+        Graphics.Blit(source, renderedSource);
 
         // STEP:1
-        // Get resized brightness image.
-
-        material.SetVector
-        (brightnessSettingsID, new Vector3(threshold, this.intensity, this.attenuation));
-
-        Graphics.Blit(source, brightnessTex, material, 1);
-
+        // Set brightness image.
+        shader.Dispatch(kernelHandle, groupSizeB.x, groupSizeB.y, 1);
         // DEBUG:
-        //Graphics.Blit(brightnessTex, destination, material, 0);
+        //Graphics.Blit(brightnessTexture, destination);
         //return;
 
         // STEP:2
-        // Get blurred brightness image.
-
-        float angle = 360f / this.numOfStreak;
-
-        for (int x = 1; x <= this.numOfStreak; x++)
+        // Set blurred brightness image.
+        float angle = 360f / streakCount;
+        Vector4 blurSettings = new Vector4();
+		RenderTexture temp;
+		
+        for (int x = 1; x <= streakCount; x++)
         {
             Vector2 offset =
-            (Quaternion.AngleAxis(angle * x + this.angleOfStreak, Vector3.forward) * Vector2.down).normalized;
-
-            material.SetVector(offsetID, offset);
-
-            material.SetInt   (iterationID, 1);
-
-            Graphics.Blit(brightnessTex, blurredTex1, material, 2);
-
-            // DEBUG:
-            //Graphics.Blit(blurredTex1, destination, material, 0);
-            //return;
-
-            for (int i = 2; i <= this.iteration; i++)
+            (Quaternion.AngleAxis(angle * x + streakAngle, Vector3.forward) * Vector2.down).normalized;
+            blurSettings.x = offset.x;
+            blurSettings.y = offset.y;
+            blurSettings.z = 1;
+			shader.Dispatch(kernelBrightnessBlurID, groupSizeB.x, groupSizeB.y, 1);
+			//DEBUG:
+			Graphics.Blit(blur1Texture, destination);
+			return;
+			
+			int texID = 1;
+			
+            for (int i = 2; i <= iteration; i++)
             {
-                material.SetInt(iterationID, i);
-
-                Graphics.Blit(blurredTex1, blurredTex2, material, 2);
-
-                // DEBUG:
-                // Graphics.Blit(blurredTex2, destination, base.material, 0);
-                // return;
-
-                RenderTexture temp = blurredTex1;
-                blurredTex1 = blurredTex2;
-                blurredTex2 = temp;
+                float power = Mathf.Pow(4, i - 1);
+                blurSettings.z = power;
+                blurSettings.x = offset.x * power;
+                blurSettings.y = offset.y * power;
+                shader.SetVector("blurSettings", blurSettings);
+                shader.Dispatch(kernelBlurID, groupSizeB.x, groupSizeB.y, 1);
+                //DEBUG
+                //Graphics.Blit(blur2Texture, destination);
+                //return;
             }
 
-            Graphics.Blit(blurredTex1, compositeTex, material, 3);
+            //DEBUG
+            //Graphics.Blit(blur1Texture, destination);
+            //return;
+            
+            shader.Dispatch(kernelCompositeID, groupSizeB.x, groupSizeB.y, 1);
         }
-
-        // DEBUG:
-        //Graphics.Blit(compositeTex, destination, material, 0);
+        
+        //DEBUG
+        //Graphics.Blit(compositeTexture, destination);
         //return;
 
         // STEP:3
         // Composite.
-
-        material.EnableKeyword(StarGlow.CompositeTypes[this.compositeType]);
-        material.SetColor(compositeColorID, this.color);
-        material.SetTexture(compositeTexID, compositeTex);
-
-        Graphics.Blit(source, destination, material, 4);
-
-        // STEP:4
-        // Close.
-
-        material.DisableKeyword(StarGlow.CompositeTypes[this.compositeType]);
-
-        RenderTexture.ReleaseTemporary(brightnessTex);
-        RenderTexture.ReleaseTemporary(blurredTex1);
-        RenderTexture.ReleaseTemporary(blurredTex2);
-        RenderTexture.ReleaseTemporary(compositeTex);
+        shader.Dispatch(kernelFinalID, groupSize.x, groupSize.y, 1);
+        Graphics.Blit(output, destination);
     }
 
     #endregion Method

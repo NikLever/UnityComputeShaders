@@ -48,7 +48,7 @@ public class StarGlow : MonoBehaviour
     public float angleOfStreak = 0;
 
     [Range(1, 16)]
-    public int numOfStreak = 4;
+    public int numOfStreaks = 4;
 
     public Material material;
 
@@ -75,8 +75,8 @@ public class StarGlow : MonoBehaviour
 
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        RenderTexture brightnessTex = RenderTexture.GetTemporary(source.width  / this.divide,
-                                                                 source.height / this.divide,
+        RenderTexture brightnessTex = RenderTexture.GetTemporary(source.width  / divide,
+                                                                 source.height / divide,
                                                                  source.depth,
                                                                  source.format);
         RenderTexture blurredTex1   = RenderTexture.GetTemporary(brightnessTex.descriptor);
@@ -98,9 +98,9 @@ public class StarGlow : MonoBehaviour
         // STEP:2
         // Get blurred brightness image.
 
-        float angle = 360f / numOfStreak;
+        float angle = 360f / numOfStreaks;
 
-        for (int x = 1; x <= numOfStreak; x++)
+        for (int x = 1; x <= numOfStreaks; x++)
         {
             Vector2 offset =
             (Quaternion.AngleAxis(angle * x + angleOfStreak, Vector3.forward) * Vector2.down).normalized;
@@ -115,7 +115,7 @@ public class StarGlow : MonoBehaviour
             //Graphics.Blit(blurredTex1, destination, material, 0);
             //return;
 
-            for (int i = 2; i <= this.iteration; i++)
+            for (int i = 2; i <= iteration; i++)
             {
                 material.SetInt(iterationID, i);
 
