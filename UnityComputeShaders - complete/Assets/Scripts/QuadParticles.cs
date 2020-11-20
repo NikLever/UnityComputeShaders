@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class QuadParticles : MonoBehaviour
+public class StarParticles : MonoBehaviour
 {
 
     private Vector2 cursorPos;
@@ -12,7 +12,7 @@ public class QuadParticles : MonoBehaviour
     {
         public Vector3 position;
         public Vector2 uv;
-        public float life;
+        public Vector3 normal;
     }
 
     struct Particle
@@ -22,9 +22,10 @@ public class QuadParticles : MonoBehaviour
         public float life;
     }
 
-    const int SIZE_VERTEX = 6 * sizeof(float);
+    const int SIZE_VERTEX = 8 * sizeof(float);
     const int SIZE_PARTICLE = 7 * sizeof(float);
 
+    public GameObject star;
     public int particleCount = 10000;
     public Material material;
     public ComputeShader shader;
@@ -32,9 +33,11 @@ public class QuadParticles : MonoBehaviour
     public float quadSize = 0.1f;
 
     int numParticles;
+    int numVerticesInMesh;
     int kernelID;
     ComputeBuffer particleBuffer;
     ComputeBuffer vertexBuffer;
+    ComputeBuffer meshBuffer;
 
     int groupSizeX; 
     
@@ -46,6 +49,12 @@ public class QuadParticles : MonoBehaviour
 
     void Init()
     {
+        if (star == null)
+        {
+            Debug.LogError("No prefab. Cannot Init app");
+            return;
+        }
+
         // find the id of the kernel
         kernelID = shader.FindKernel("CSMain");
 
@@ -56,11 +65,15 @@ public class QuadParticles : MonoBehaviour
 
         // initialize the particles
         Particle[] particleArray = new Particle[numParticles];
-        int numVertices = numParticles * 6;
+
+        MeshFilter mf = star.GetComponent<MeshFilter>();
+        Mesh mesh = mf.mesh;
+
+        numVerticesInMesh = mesh.vertices.Length;
+        int numVertices = numParticles * numVerticesInMesh;
         Vertex[] vertexArray = new Vertex[numVertices];
 
         Vector3 pos = new Vector3();
-        float halfSize = quadSize * 0.5f;
         
         for (int i = 0; i < numParticles; i++)
         {
@@ -74,22 +87,6 @@ public class QuadParticles : MonoBehaviour
           
             // Initial life value
             particleArray[i].life = Random.value * 5.0f + 1.0f;
-
-            int index = i * 6;
-            //6 vertices in quad
-            //Triangle 1 - clockwise, bottom-left
-            vertexArray[index].uv.Set(0, 0);
-            //top-left
-            vertexArray[index+1].uv.Set(0, 1);
-            //top-right
-            vertexArray[index+2].uv.Set(1, 1);
-            //Triangle 2 - clockwise, bottom-left
-            vertexArray[index+3].uv.Set(0, 0);
-            //top-right
-            vertexArray[index+4].uv.Set(1, 1);
-            //bottom-right
-            vertexArray[index+5].uv.Set(1, 0);
-            
         }
 
         // create compute buffers
@@ -101,7 +98,8 @@ public class QuadParticles : MonoBehaviour
         // bind the compute buffers to the shader and the compute shader
         shader.SetBuffer(kernelID, "particleBuffer", particleBuffer);
         shader.SetBuffer(kernelID, "vertexBuffer", vertexBuffer);
-        shader.SetFloat("halfSize", quadSize / 2);
+        shader.SetBuffer(kernelID, "meshBuffer", meshBuffer);
+        
         material.SetBuffer("vertexBuffer", vertexBuffer);
     }
 
