@@ -147,18 +147,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 204301666}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af50aa0b69eb146a8a239fed633e2942, type: 3}
+  m_Script: {fileID: 11500000, guid: dfda49b24ad154d65aef316971662512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 447f8e1162cda42b885bd7c226724481, type: 3}
+  shader: {fileID: 7200000, guid: 3780d92b9ddb74906833acdd06ec08f9, type: 3}
   rotationSpeed: 4
   boidSpeed: 6
   neighbourDistance: 2
-  boidSpeedVariation: 0.9
-  boidPrefab: {fileID: 5203919481050334109, guid: 6162ad78227b64a999f512c41ed2c247,
-    type: 3}
-  boidsCount: 500
-  spawnRadius: 2
+  boidSpeedVariation: 0.8
+  boidMesh: {fileID: 4300000, guid: 98744b4f4158df441af5841eb9e98dbd, type: 3}
+  boidMaterial: {fileID: 2100000, guid: 348752f5f8d734b5c9efb2ecacf9be91, type: 2}
+  boidsCount: 1000
+  spawnRadius: 10
   target: {fileID: 204301668}
 --- !u!4 &204301668
 Transform:
