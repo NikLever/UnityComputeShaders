@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44375315, g: 0.49310154, b: 0.5726347, a: 1}
+  m_IndirectSpecularColor: {r: 0.44375336, g: 0.49310178, b: 0.5726349, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -130,6 +130,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 204301668}
+  - component: {fileID: 204301667}
   m_Layer: 0
   m_Name: Balls
   m_TagString: Untagged
@@ -137,6 +138,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &204301667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 204301666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45cf8ea648bcf4f70b0c8e759d68bf94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shader: {fileID: 7200000, guid: a653ec14e1b8f4b99a3f32bd61bb0873, type: 3}
+  ballMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  ballMaterial: {fileID: 2100000, guid: f257577638791416a902925bd6999190, type: 2}
+  ballsCount: 200
 --- !u!4 &204301668
 Transform:
   m_ObjectHideFlags: 0
