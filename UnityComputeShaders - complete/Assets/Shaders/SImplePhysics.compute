@@ -1,0 +1,94 @@
+﻿#pragma kernel CSMain
+#define GROUP_SIZE 256
+#define PI2 6.28318530718
+
+struct Ball
+{
+	float3 position;
+	float3 velocity;
+	float4 color;
+};
+
+RWStructuredBuffer<Ball> ballsBuffer;
+
+float deltaTime;
+int ballsCount;
+float radius;
+float4 limitsXZ;
+float floorY;
+
+#define LIMITS_MIN_X limitsXZ.x
+#define LIMITS_MAX_X limitsXZ.y
+#define LIMITS_MIN_Z limitsXZ.z
+#define LIMITS_MAX_Z limitsXZ.w
+#define LIMITS_MIN_Y floorY
+
+[numthreads(GROUP_SIZE,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	Ball ball = ballsBuffer[id.x];
+
+	ball.position += ball.velocity * deltaTime;
+	
+	// keep objects inside room
+	if ( ball.position.x < LIMITS_MIN_X || ball.position.x > LIMITS_MAX_X ) {
+
+		ball.position.x = clamp( ball.position.x, LIMITS_MIN_X, LIMITS_MAX_X );
+		ball.velocity.x = - ball.velocity.x;
+
+	}
+
+	if ( ball.y < LIMITS_MIN_Y ) {
+
+		ball.position.y = max( ball.position.y, radius );
+
+		ball.velocity.xz *= 0.98;
+		ball.velocity.y = - ball.velocity.y * 0.8;
+
+	}
+
+	if ( ball.position.z < LIMITS_MIN_Z || ball.position.z > LIMITS_MAX_Z ) {
+
+		ball.position.z = clamp( ball.position.z, LIMITS_MIN_Z, LIMITS_MAX_Z );
+		ball.velocity.z = - ball.velocity.z;
+
+	}
+
+	float3 normal;
+	float3 relativeVelocity;
+
+	for ( int i = 0; i < ballsCount; i ++ ) {
+		if ( (uint)i==id.x) continue;
+		
+		const ball2 = ballsBuffer[ (uint)i ];
+
+		normal = ball.position - ball2.position;
+		
+		const float distance = length(normal);
+
+		if ( distance < 2 * radius ) {
+
+			normal *= 0.5 * distance - radius;
+
+			ball.position -= normal;
+			ball2.position += normal;
+
+			normal.normalize();
+
+			relativeVelocity = ball.velocity - ball2.velocity;
+
+			normal *= relativeVelocity.dot( normal ) );
+
+			ball.velocity -= normal;
+			ball2.velocity += normal;
+
+		}
+
+	}
+
+	ball.velocity.y -= 9.8 * deltaTime;
+
+	ballsBuffer[id.x] = ball;
+}
+
+

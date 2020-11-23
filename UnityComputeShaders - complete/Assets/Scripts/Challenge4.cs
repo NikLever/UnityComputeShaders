@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class InstancedFlocking : MonoBehaviour
+public class Challenge4 : MonoBehaviour
 {
     public struct Boid
     {
         public Vector3 position;
         public Vector3 direction;
         public float noise_offset;
+        public float theta;
 
         public Boid(Vector3 pos, Vector3 dir, float offset)
         {
@@ -19,6 +20,7 @@ public class InstancedFlocking : MonoBehaviour
             direction.y = dir.y;
             direction.z = dir.z;
             noise_offset = offset;
+            theta = Random.value * Mathf.PI * 2;
         }
     }
 
@@ -39,9 +41,11 @@ public class InstancedFlocking : MonoBehaviour
     ComputeBuffer argsBuffer;
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     Boid[] boidsArray;
+    GameObject[] boids;
     int groupSizeX;
     int numOfBoids;
     Bounds bounds;
+    MaterialPropertyBlock props;
 
     void Start()
     {
@@ -53,13 +57,18 @@ public class InstancedFlocking : MonoBehaviour
         numOfBoids = groupSizeX * (int)x;
 
         bounds = new Bounds(Vector3.zero, Vector3.one * 1000);
+        props = new MaterialPropertyBlock();
+        props.SetFloat("_UniqueID", Random.value);
 
         InitBoids();
         InitShader();
+
+        //Debug.Log(boidMesh.bounds);
     }
 
     private void InitBoids()
     {
+        boids = new GameObject[numOfBoids];
         boidsArray = new Boid[numOfBoids];
 
         for (int i = 0; i < numOfBoids; i++)
@@ -73,7 +82,7 @@ public class InstancedFlocking : MonoBehaviour
 
     void InitShader()
     {
-        boidsBuffer = new ComputeBuffer(numOfBoids, 7 * sizeof(float));
+        boidsBuffer = new ComputeBuffer(numOfBoids, 8 * sizeof(float));
         boidsBuffer.SetData(boidsArray);
 
         argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
@@ -104,7 +113,7 @@ public class InstancedFlocking : MonoBehaviour
 
         shader.Dispatch(this.kernelHandle, groupSizeX, 1, 1);
 
-        Graphics.DrawMeshInstancedIndirect(boidMesh, 0, boidMaterial, bounds, argsBuffer, 0);
+        Graphics.DrawMeshInstancedIndirect(boidMesh, 0, boidMaterial, bounds, argsBuffer, 0, props);
     }
 
     void OnDestroy()
