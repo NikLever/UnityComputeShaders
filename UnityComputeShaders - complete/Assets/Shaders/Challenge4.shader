@@ -28,20 +28,23 @@
         #pragma surface surf Standard vertex:vert addshadow nolightmap
         #pragma instancing_options procedural:setup
 
-        float3 _BallPosition;
+        float3 _BoidPosition;
+        float _FinOffset;
+        float4x4 _LookAtMatrix;
         
          #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-            struct Ball
+            struct Boid
             {
                 float3 position;
-                float4 quaternion;
-                float3 velocity;
+                float3 direction;
+                float noise_offset;
+                float theta;
             };
 
-            StructuredBuffer<Ball> ballsBuffer; 
+            StructuredBuffer<Boid> boidsBuffer; 
          #endif
 
-        float4x4 matrixFromPositionAndQuaternion(float3 at, float3 eye, float3 up) {
+        float4x4 look_at_matrix(float3 at, float3 eye, float3 up) {
             float3 zaxis = normalize(at - eye);
             float3 xaxis = normalize(cross(up, zaxis));
             float3 yaxis = cross(zaxis, xaxis);
@@ -58,16 +61,20 @@
             UNITY_INITIALIZE_OUTPUT(Input, data);
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
+                if (v.vertex.z<-0.2){
+                    v.vertex.x += (sin(abs(v.vertex.z+0.2)*5*UNITY_HALF_PI + 3*UNITY_HALF_PI) + 1) * 0.3 * _FinOffset;
+                }
                 v.vertex = mul(_LookAtMatrix, v.vertex);
-                v.vertex.xyz += _BallPosition;
+                v.vertex.xyz += _BoidPosition;
             #endif
         }
 
         void setup()
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                _BallPosition = ballsBuffer[unity_InstanceID].position;
-                _LookAtMatrix = look_at_matrix(_BallPosition, _BallPosition + (ballBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
+                _FinOffset = sin(boidsBuffer[unity_InstanceID].theta);
+                _BoidPosition = boidsBuffer[unity_InstanceID].position;
+                _LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
             #endif
         }
  
