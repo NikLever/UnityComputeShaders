@@ -67,7 +67,7 @@
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 _Color = ballsBuffer[unity_InstanceID].color;
-                _BoidPosition = boidsBuffer[unity_InstanceID].position;
+                _BallPosition = ballsBuffer[unity_InstanceID].position;
                 //_LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
             #endif
         }

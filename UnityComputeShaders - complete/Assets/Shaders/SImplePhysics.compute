@@ -38,7 +38,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
 	}
 
-	if ( ball.y < LIMITS_MIN_Y ) {
+	if ( ball.position.y < LIMITS_MIN_Y ) {
 
 		ball.position.y = max( ball.position.y, radius );
 
@@ -60,7 +60,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 	for ( int i = 0; i < ballsCount; i ++ ) {
 		if ( (uint)i==id.x) continue;
 		
-		const ball2 = ballsBuffer[ (uint)i ];
+		Ball ball2 = ballsBuffer[ (uint)i ];
 
 		normal = ball.position - ball2.position;
 		
@@ -73,11 +73,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 			ball.position -= normal;
 			ball2.position += normal;
 
-			normal.normalize();
+			normal = normalize(normal);
 
 			relativeVelocity = ball.velocity - ball2.velocity;
 
-			normal *= relativeVelocity.dot( normal ) );
+			normal *= dot( relativeVelocity, normal );
 
 			ball.velocity -= normal;
 			ball2.velocity += normal;

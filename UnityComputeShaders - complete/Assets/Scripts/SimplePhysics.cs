@@ -72,7 +72,7 @@ public class SimplePhysics : MonoBehaviour
 
     void InitShader()
     {
-        ballsBuffer = new ComputeBuffer(numOfBalls, 8 * sizeof(float));
+        ballsBuffer = new ComputeBuffer(numOfBalls, 10 * sizeof(float));
         ballsBuffer.SetData(ballsArray);
 
         argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);

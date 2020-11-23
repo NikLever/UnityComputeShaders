@@ -1,4 +1,4 @@
-﻿Shader "Physics/Ball" { 
+﻿Shader "Flocking/Fish" { 
 
    Properties {
 		_Color ("Color", Color) = (1,1,1,1)
