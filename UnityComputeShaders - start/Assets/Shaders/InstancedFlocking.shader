@@ -1,4 +1,4 @@
-﻿Shader "Physics/Simple" { 
+﻿Shader "Flocking/Instanced" { 
 
    Properties {
 		_Color ("Color", Color) = (1,1,1,1)
@@ -10,10 +10,9 @@
 	}
 
    SubShader {
-        Cull Off
+ 
+		CGPROGRAM
 
-		CGPROGRAM        
-        
 		sampler2D _MainTex;
 		sampler2D _BumpMap;
 		sampler2D _MetallicGlossMap;
@@ -29,18 +28,18 @@
         #pragma surface surf Standard vertex:vert addshadow nolightmap
         #pragma instancing_options procedural:setup
 
-        float3 _BallPosition;
-        float _Radius;
-        
+        float4x4 _LookAtMatrix;
+        float3 _BoidPosition;
+
          #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-            struct Ball
+            struct Boid
             {
                 float3 position;
-                float3 velocity;
-                float4 color;
+                float3 direction;
+                float noise_offset;
             };
 
-            StructuredBuffer<Ball> ballsBuffer; 
+            StructuredBuffer<Boid> boidsBuffer; 
          #endif
 
         float4x4 look_at_matrix(float3 at, float3 eye, float3 up) {
@@ -60,17 +59,16 @@
             UNITY_INITIALIZE_OUTPUT(Input, data);
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                v.vertex.xyz *= _Radius;
-                v.vertex.xyz += _BallPosition;
+                v.vertex = mul(_LookAtMatrix, v.vertex);
+                v.vertex.xyz += _BoidPosition;
             #endif
         }
 
         void setup()
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                _Color = ballsBuffer[unity_InstanceID].color;
-                _BallPosition = ballsBuffer[unity_InstanceID].position;
-                //_LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
+                _BoidPosition = boidsBuffer[unity_InstanceID].position;
+                _LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
             #endif
         }
  

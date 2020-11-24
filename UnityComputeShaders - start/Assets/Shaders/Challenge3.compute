@@ -1,0 +1,20 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+Texture2D<float4> source;
+RWTexture2D<float4> output;
+float tintHeight;
+float shade;
+float edgeWidth;
+float4 tintColor;
+float tintStrength;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    float4 srcColor = source[id.xy];
+    float4 color = srcColor;
+
+    output[id.xy] = color;
+
+}

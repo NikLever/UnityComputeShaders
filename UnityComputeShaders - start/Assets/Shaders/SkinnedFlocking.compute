@@ -1,0 +1,116 @@
+﻿#pragma kernel CSMain
+#define GROUP_SIZE 256
+
+#include "UnityCG.cginc"
+
+float hash( float n )
+{
+	return frac(sin(n)*43758.5453);
+}
+
+// The noise function returns a value in the range -1.0f -> 1.0f
+float noise1( float3 x )
+{
+	float3 p = floor(x);
+	float3 f = frac(x);
+
+	f       = f*f*(3.0-2.0*f);
+	float n = p.x + p.y*57.0 + 113.0*p.z;
+
+	return lerp(lerp(lerp( hash(n+0.0), hash(n+1.0),f.x),
+					lerp( hash(n+57.0), hash(n+58.0),f.x),f.y),
+				lerp(lerp( hash(n+113.0), hash(n+114.0),f.x),
+					lerp( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
+}
+
+struct Boid
+{
+	float3 position;
+	float3 direction;
+	float noise_offset;
+	float speed;
+	float frame;
+	float next_frame;
+	float frame_interpolation;
+	float padding;
+};
+
+RWStructuredBuffer<Boid> boidsBuffer;
+
+CBUFFER_START(Params)
+	float DeltaTime;
+	float RotationSpeed;
+	float BoidSpeed;
+	float BoidSpeedVariation;
+	float3 FlockPosition;
+	float NeighbourDistance;
+	uint boidsCount;
+	float BoidFrameSpeed;
+	int numOfFrames;
+CBUFFER_END
+
+[numthreads(GROUP_SIZE,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	uint instanceId = id.x;
+	Boid boid = boidsBuffer[instanceId];
+
+	float noise = clamp(noise1(_Time / 100.0 + boid.noise_offset), -1, 1) * 2.0 - 1.0;
+	float velocity = BoidSpeed * (1.0 + noise * BoidSpeedVariation);
+
+	float3 boid_pos = boid.position;
+	float3 boid_dir = boid.direction;
+
+	float3 separation = float3(0, 0.0, 0);
+	float3 alignment = float3(0.0, 0.0, 0.0);
+	float3 cohesion = FlockPosition;
+
+	uint nearbyCount = 1; // Add self that is ignored in loop
+
+	for (uint i = 0; i < boidsCount; i++) {
+		if (i == instanceId)
+			continue;
+			
+		if (distance(boid_pos, boidsBuffer[i].position) < NeighbourDistance)
+		{
+			float3 tempBoid_position = boidsBuffer[i].position;
+
+			float3 diff = boid_pos - tempBoid_position;
+			float diffLen = (length(diff));
+			float scaler = clamp(1.0 - diffLen / NeighbourDistance, 0.0, 1.0);
+			
+			separation += diff * (scaler / diffLen);
+			alignment += boidsBuffer[i].direction;
+			cohesion += tempBoid_position;
+
+			nearbyCount += 1;
+		}
+	}
+
+	float avg = 1.0 / nearbyCount;
+	alignment *= avg;
+	cohesion *= avg;
+	cohesion = normalize(cohesion - boid_pos);
+
+	float3 direction = alignment + separation + cohesion;
+
+	float ip = exp(-RotationSpeed * DeltaTime);
+	boid.direction = lerp((direction), normalize(boid_dir), ip);
+
+	boid.position += (boid.direction) * (velocity * DeltaTime);
+ 
+	float current_frame = (boid.frame + velocity * (DeltaTime * BoidFrameSpeed));
+	int current_frame_floor = trunc(current_frame);
+	boid.frame = current_frame;
+	boid.next_frame = current_frame_floor + 1;
+	boid.frame_interpolation = current_frame - current_frame_floor;
+	if (current_frame_floor >= numOfFrames) {
+		boid.frame = 0;
+		boid.next_frame = 1;
+	}
+	else if (current_frame_floor >= numOfFrames - 1)
+		boid.next_frame = 0;
+
+	boidsBuffer[id.x] = boid;
+}
+
