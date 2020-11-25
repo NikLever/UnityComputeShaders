@@ -14,7 +14,7 @@ public class QuadParticles : MonoBehaviour
     {
         public Vector3 position;
         public Vector2 uv;
-        public Vector3 normal;
+        public float life;
     }
 
     struct Particle
@@ -24,7 +24,7 @@ public class QuadParticles : MonoBehaviour
         public float life;
     }
 
-    const int SIZE_VERTEX = 8 * sizeof(float);
+    const int SIZE_VERTEX = 6 * sizeof(float);
     const int SIZE_PARTICLE = 7 * sizeof(float);
 
     public int particleCount = 10000;
@@ -65,6 +65,8 @@ public class QuadParticles : MonoBehaviour
 
         Vector3 pos = new Vector3();
         
+        int index;
+        
         for (int i = 0; i < numParticles; i++)
         {
             pos.Set(Random.value * 2 - 1.0f, Random.value * 2 - 1.0f, Random.value * 2 - 1.0f);
@@ -77,6 +79,16 @@ public class QuadParticles : MonoBehaviour
           
             // Initial life value
             particleArray[i].life = Random.value * 5.0f + 1.0f;
+            
+            index = i*6;
+            //Triangle 1 - bottom-left, top-left, top-right
+            vertexArray[index].uv.Set(0,0);
+            vertexArray[index+1].uv.Set(0,1);
+            vertexArray[index+2].uv.Set(1,1);
+            //Triangle 2 - bottom-left, top-right, bottom-right  // // 
+			vertexArray[index+3].uv.Set(0,0);
+            vertexArray[index+4].uv.Set(1,1);
+            vertexArray[index+5].uv.Set(1,0);
         }
 
         // create compute buffers
