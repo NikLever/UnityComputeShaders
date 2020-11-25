@@ -85,9 +85,9 @@ public class QuadParticles : MonoBehaviour
 
     void OnDestroy()
     {
-        if (particleBuffer != null)
+        if (particleBuffer != null){
             particleBuffer.Release();
-        )
+        }
     }
 
     // Update is called once per frame
