@@ -54,45 +54,52 @@ void respawn(uint id)
 [numthreads(256, 1, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
+	Particle p = particleBuffer[id.x];
+	
 	// subtract the life based on deltaTime
-	particleBuffer[id.x].life -= deltaTime;
+	p.life -= deltaTime;
 
-	float3 delta = float3(mousePosition.xy, 3) - particleBuffer[id.x].position;
+	float3 delta = float3(mousePosition.xy, 3) - p.position;
 	float3 dir = normalize(delta);
 
-	particleBuffer[id.x].velocity += dir;
-	particleBuffer[id.x].position += particleBuffer[id.x].velocity * deltaTime;
+	p.velocity += dir;
+	p.position += p.velocity * deltaTime;
 
-	if (particleBuffer[id.x].life < 0) respawn(id.x);
+	particleBuffer[id.x] = p;
+	
+	if (particleBuffer[id.x].life < 0){
+		respawn(id.x);
+		p = particleBuffer[id.x];
+	}
 	
 	//Set the vertex buffer //
 	int index = id.x * 6;
 	//Triangle 1 - bottom-left, top-left, top-right   
-	vertexBuffer[index].position.x = particleBuffer[id.x].position.x-halfSize;
-	vertexBuffer[index].position.y = particleBuffer[id.x].position.y-halfSize;
-	vertexBuffer[index].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index].life = particleBuffer[id.x].life;
-	vertexBuffer[index+1].position.x = particleBuffer[id.x].position.x-halfSize;
-	vertexBuffer[index+1].position.y = particleBuffer[id.x].position.y+halfSize;
-	vertexBuffer[index+1].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+1].life = particleBuffer[id.x].life;
-	vertexBuffer[index+2].position.x = particleBuffer[id.x].position.x+halfSize;
-	vertexBuffer[index+2].position.y = particleBuffer[id.x].position.y+halfSize;
-	vertexBuffer[index+2].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+2].life = particleBuffer[id.x].life;
+	vertexBuffer[index].position.x = p.position.x-halfSize;
+	vertexBuffer[index].position.y = p.position.y-halfSize;
+	vertexBuffer[index].position.z = p.position.z;
+	vertexBuffer[index].life = p.life;
+	vertexBuffer[index+1].position.x = p.position.x-halfSize;
+	vertexBuffer[index+1].position.y = p.position.y+halfSize;
+	vertexBuffer[index+1].position.z = p.position.z;
+	vertexBuffer[index+1].life = p.life;
+	vertexBuffer[index+2].position.x = p.position.x+halfSize;
+	vertexBuffer[index+2].position.y = p.position.y+halfSize;
+	vertexBuffer[index+2].position.z = p.position.z;
+	vertexBuffer[index+2].life = p.life;
 	//Triangle 2 - bottom-left, top-right, bottom-right  // // 
-	vertexBuffer[index+3].position.x = particleBuffer[id.x].position.x-halfSize;
-	vertexBuffer[index+3].position.y = particleBuffer[id.x].position.y-halfSize;
-	vertexBuffer[index+3].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+3].life = particleBuffer[id.x].life;
-	vertexBuffer[index+4].position.x = particleBuffer[id.x].position.x+halfSize;
-	vertexBuffer[index+4].position.y = particleBuffer[id.x].position.y+halfSize;
-	vertexBuffer[index+4].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+4].life = particleBuffer[id.x].life;
-	vertexBuffer[index+5].position.x = particleBuffer[id.x].position.x+halfSize;
-	vertexBuffer[index+5].position.y = particleBuffer[id.x].position.y-halfSize;
-	vertexBuffer[index+5].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+5].life = particleBuffer[id.x].life;
+	vertexBuffer[index+3].position.x = p.position.x-halfSize;
+	vertexBuffer[index+3].position.y = p.position.y-halfSize;
+	vertexBuffer[index+3].position.z = p.position.z;
+	vertexBuffer[index+3].life = p.life;
+	vertexBuffer[index+4].position.x = p.position.x+halfSize;
+	vertexBuffer[index+4].position.y = p.position.y+halfSize;
+	vertexBuffer[index+4].position.z = p.position.z;
+	vertexBuffer[index+4].life = p.life;
+	vertexBuffer[index+5].position.x = p.position.x+halfSize;
+	vertexBuffer[index+5].position.y = p.position.y-halfSize;
+	vertexBuffer[index+5].position.z = p.position.z;
+	vertexBuffer[index+5].life = p.life;
 }
 
 
