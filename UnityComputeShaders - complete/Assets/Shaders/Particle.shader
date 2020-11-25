@@ -28,7 +28,7 @@
 			float life;
 		};
 		
-		struct PS_INPUT{
+		struct v2f{
 			float4 position : SV_POSITION;
 			float4 color : COLOR;
 			float life : LIFE;
@@ -38,9 +38,9 @@
 		StructuredBuffer<Particle> particleBuffer;
 		
 
-		PS_INPUT vert(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
+		v2f vert(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 		{
-			PS_INPUT o = (PS_INPUT)0;
+			v2f o = (v2f)0;
 
 			// Color
 			float life = particleBuffer[instance_id].life;
@@ -54,7 +54,7 @@
 			return o;
 		}
 
-		float4 frag(PS_INPUT i) : COLOR
+		float4 frag(v2f i) : COLOR
 		{
 			return i.color;
 		}

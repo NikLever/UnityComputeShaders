@@ -15,13 +15,7 @@ RWStructuredBuffer<Particle> particleBuffer;
 float deltaTime;
 float2 mousePosition;
 
-float nrand(float2 uv)
-{
-	return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
-}
-
 uint rng_state;
-
 
 uint rand_xorshift()
 {
@@ -32,32 +26,35 @@ uint rand_xorshift()
 	return rng_state;
 }
 
+void respawn(uint id)
+{
+	rng_state = id;
+	float tmp = (1.0 / 4294967296.0);
+	float f0 = float(rand_xorshift()) * tmp - 0.5;
+	float f1 = float(rand_xorshift()) * tmp - 0.5;
+	float f2 = float(rand_xorshift()) * tmp - 0.5;
+	float3 normalF3 = normalize(float3(f0, f1, f2)) * 0.8f;
+	normalF3 *= float(rand_xorshift()) * tmp;
+	particleBuffer[id].position = float3(normalF3.x + mousePosition.x, normalF3.y + mousePosition.y, normalF3.z + 3.0);
+	// reset the life of this particle
+	particleBuffer[id].life = 4;
+	particleBuffer[id].velocity = float3(0,0,0);
+}
+
 [numthreads(256, 1, 1)]
 void CSParticle(uint3 id : SV_DispatchThreadID)
 {
+	Particle particle = particleBuffer[id.x];
 	// subtract the life based on deltaTime
-	particleBuffer[id.x].life -= deltaTime;
+	particle.life -= deltaTime;
 
-	float3 delta = float3(mousePosition.xy, 3) - particleBuffer[id.x].position;
+	float3 delta = float3(mousePosition.xy, 3) - particle.position;
 	float3 dir = normalize(delta);
 
-	particleBuffer[id.x].velocity += dir;
-	particleBuffer[id.x].position += particleBuffer[id.x].velocity * deltaTime;
+	particle.velocity += dir;
+	particle.position += particle.velocity * deltaTime;
 
-
-	if (particleBuffer[id.x].life < 0)
-	{
-		// http://www.reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
-		rng_state = id.x;
-		float f0 = float(rand_xorshift()) * (1.0 / 4294967296.0) - 0.5;
-		float f1 = float(rand_xorshift()) * (1.0 / 4294967296.0) - 0.5;
-		float f2 = float(rand_xorshift()) * (1.0 / 4294967296.0) - 0.5;
-		float3 normalF3 = normalize(float3(f0, f1, f2)) * 0.8f;
-		normalF3 *= float(rand_xorshift()) * (1.0 / 4294967296.0);
-		particleBuffer[id.x].position = float3(normalF3.x + mousePosition.x, normalF3.y + mousePosition.y, normalF3.z + 3.0);
-		// reset the life of this particle
-		particleBuffer[id.x].life = 4;
-		particleBuffer[id.x].velocity = float3(0, 0,0);
-	}
-
+	particleBuffer[id.x] = particle;
+	
+	if (particle.life < 0) respawn(id.x);
 }

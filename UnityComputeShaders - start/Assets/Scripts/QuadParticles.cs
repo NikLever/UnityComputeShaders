@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StarParticles : MonoBehaviour
+#pragma warning disable 0649
+
+public class QuadParticles : MonoBehaviour
 {
 
     private Vector2 cursorPos;
@@ -25,7 +27,6 @@ public class StarParticles : MonoBehaviour
     const int SIZE_VERTEX = 8 * sizeof(float);
     const int SIZE_PARTICLE = 7 * sizeof(float);
 
-    public GameObject star;
     public int particleCount = 10000;
     public Material material;
     public ComputeShader shader;
@@ -49,12 +50,6 @@ public class StarParticles : MonoBehaviour
 
     void Init()
     {
-        if (star == null)
-        {
-            Debug.LogError("No prefab. Cannot Init app");
-            return;
-        }
-
         // find the id of the kernel
         kernelID = shader.FindKernel("CSMain");
 
@@ -66,11 +61,7 @@ public class StarParticles : MonoBehaviour
         // initialize the particles
         Particle[] particleArray = new Particle[numParticles];
 
-        MeshFilter mf = star.GetComponent<MeshFilter>();
-        Mesh mesh = mf.mesh;
-
-        numVerticesInMesh = mesh.vertices.Length;
-        int numVertices = numParticles * numVerticesInMesh;
+        int numVertices = numParticles * 6;
         Vertex[] vertexArray = new Vertex[numVertices];
 
         Vector3 pos = new Vector3();
@@ -98,7 +89,6 @@ public class StarParticles : MonoBehaviour
         // bind the compute buffers to the shader and the compute shader
         shader.SetBuffer(kernelID, "particleBuffer", particleBuffer);
         shader.SetBuffer(kernelID, "vertexBuffer", vertexBuffer);
-        shader.SetBuffer(kernelID, "meshBuffer", meshBuffer);
         
         material.SetBuffer("vertexBuffer", vertexBuffer);
     }

@@ -45,15 +45,13 @@
 			float lerpVal = vertexBuffer[index].life * 0.25f;
 			o.color = fixed4(1.0f - lerpVal+0.1, lerpVal+0.1, 1.0f, lerpVal);
 			o.position = UnityWorldToClipPos(float4(vertexBuffer[index].position, 1.0f));
-			o.uv = vertexBuffer[index].uv;
-
+			
 			return o;
 		}
 
 		float4 frag(v2f i) : COLOR
 		{
-			fixed4 color = tex2D( _MainTex, i.uv ) * i.color;
-			return color;
+			return i.color;
 		}
 
 

@@ -46,6 +46,16 @@ float3 random3(){
 	return float3(rand_xorshift(), rand_xorshift(), rand_xorshift()) * (1.0 / 4294967296.0);
 }
 
+void respawn(uint id)
+{
+	rng_state = id;
+	float3 pos = normalize(random3()) * 3.8f;
+	particleBuffer[id].position = float3(pos.x + mousePosition.x, pos.y + mousePosition.y, pos.z + 3.0);
+	// reset the life of this particle
+	particleBuffer[id].life = 4;
+	particleBuffer[id].velocity = float3(0,0,0);
+}
+
 [numthreads(256, 1, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -58,15 +68,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 	particleBuffer[id.x].velocity += dir;
 	particleBuffer[id.x].position += particleBuffer[id.x].velocity * deltaTime;
 
-	if (particleBuffer[id.x].life < 0)
-	{
-		rng_state = id.x;
-		float3 pos = normalize(random3()) * 3.8f;
-		particleBuffer[id.x].position = float3(pos.x + mousePosition.x, pos.y + mousePosition.y, pos.z + 3.0);
-		// reset the life of this particle
-		particleBuffer[id.x].life = 4;
-		particleBuffer[id.x].velocity = float3(0,0,0);
-	}
+	if (particleBuffer[id.x].life < 0) respawn(id.x);
+	
 	//Set the vertex buffer //
 	int index = id.x * 6;
 	//Triangle 1 - bottom-left, top-left, top-right   
