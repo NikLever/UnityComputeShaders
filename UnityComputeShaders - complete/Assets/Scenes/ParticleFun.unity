@@ -328,7 +328,7 @@ MonoBehaviour:
   particleCount: 1000000
   material: {fileID: 2100000, guid: 8aab1aa4f1dea47639d5caf561297a33, type: 2}
   shader: {fileID: 7200000, guid: 14886d445ceca4afa808d01d70cb0fb6, type: 3}
-  pointSize: 4
+  pointSize: 2
 --- !u!4 &901185535
 Transform:
   m_ObjectHideFlags: 0

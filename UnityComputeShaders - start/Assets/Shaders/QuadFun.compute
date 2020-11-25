@@ -8,16 +8,8 @@ struct Particle
 	float life;
 };
 
-struct Vertex
-{
-	float3 position;
-	float2 uv;
-	float life;
-};
-
 // Particle's data, shared with the shader
 RWStructuredBuffer<Particle> particleBuffer;
-RWStructuredBuffer<Vertex> vertexBuffer;
 
 // Variables set from the CPU 
 float deltaTime;
@@ -67,34 +59,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 		particleBuffer[id.x].life = 4;
 		particleBuffer[id.x].velocity = float3(0,0,0);
 	}
-	//Set the vertex buffer //
-	int index = id.x * 6;
-	//Triangle 1 - bottom-left, top-left, top-right   
-	vertexBuffer[index].position.x = particleBuffer[id.x].position.x-halfSize;
-	vertexBuffer[index].position.y = particleBuffer[id.x].position.y-halfSize;
-	vertexBuffer[index].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index].life = particleBuffer[id.x].life;
-	vertexBuffer[index+1].position.x = particleBuffer[id.x].position.x-halfSize;
-	vertexBuffer[index+1].position.y = particleBuffer[id.x].position.y+halfSize;
-	vertexBuffer[index+1].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+1].life = particleBuffer[id.x].life;
-	vertexBuffer[index+2].position.x = particleBuffer[id.x].position.x+halfSize;
-	vertexBuffer[index+2].position.y = particleBuffer[id.x].position.y+halfSize;
-	vertexBuffer[index+2].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+2].life = particleBuffer[id.x].life;
-	//Triangle 2 - bottom-left, top-right, bottom-right  // // 
-	vertexBuffer[index+3].position.x = particleBuffer[id.x].position.x-halfSize;
-	vertexBuffer[index+3].position.y = particleBuffer[id.x].position.y-halfSize;
-	vertexBuffer[index+3].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+3].life = particleBuffer[id.x].life;
-	vertexBuffer[index+4].position.x = particleBuffer[id.x].position.x+halfSize;
-	vertexBuffer[index+4].position.y = particleBuffer[id.x].position.y+halfSize;
-	vertexBuffer[index+4].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+4].life = particleBuffer[id.x].life;
-	vertexBuffer[index+5].position.x = particleBuffer[id.x].position.x+halfSize;
-	vertexBuffer[index+5].position.y = particleBuffer[id.x].position.y-halfSize;
-	vertexBuffer[index+5].position.z = particleBuffer[id.x].position.z;
-	vertexBuffer[index+5].life = particleBuffer[id.x].life;
 }
 
 

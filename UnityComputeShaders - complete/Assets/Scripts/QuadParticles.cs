@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-#pragma warning disable 649
+#pragma warning disable 0649
 
-public class StarParticles : MonoBehaviour
+public class QuadParticles : MonoBehaviour
 {
 
     private Vector2 cursorPos;
@@ -14,7 +14,7 @@ public class StarParticles : MonoBehaviour
     {
         public Vector3 position;
         public Vector2 uv;
-        public Vector3 normal;
+        public float life;
     }
 
     struct Particle
@@ -24,10 +24,9 @@ public class StarParticles : MonoBehaviour
         public float life;
     }
 
-    const int SIZE_VERTEX = 8 * sizeof(float);
+    const int SIZE_VERTEX = 6 * sizeof(float);
     const int SIZE_PARTICLE = 7 * sizeof(float);
 
-    public GameObject star;
     public int particleCount = 10000;
     public Material material;
     public ComputeShader shader;
@@ -35,7 +34,6 @@ public class StarParticles : MonoBehaviour
     public float quadSize = 0.1f;
 
     int numParticles;
-    int numVerticesInMesh;
     int kernelID;
     ComputeBuffer particleBuffer;
     ComputeBuffer vertexBuffer;
@@ -51,12 +49,6 @@ public class StarParticles : MonoBehaviour
 
     void Init()
     {
-        if (star == null)
-        {
-            Debug.LogError("No prefab. Cannot Init app");
-            return;
-        }
-
         // find the id of the kernel
         kernelID = shader.FindKernel("CSMain");
 
@@ -68,14 +60,12 @@ public class StarParticles : MonoBehaviour
         // initialize the particles
         Particle[] particleArray = new Particle[numParticles];
 
-        MeshFilter mf = star.GetComponent<MeshFilter>();
-        Mesh mesh = mf.mesh;
-
-        numVerticesInMesh = mesh.vertices.Length;
-        int numVertices = numParticles * numVerticesInMesh;
+        int numVertices = numParticles * 6;
         Vertex[] vertexArray = new Vertex[numVertices];
 
         Vector3 pos = new Vector3();
+        
+        int index;
         
         for (int i = 0; i < numParticles; i++)
         {
@@ -89,6 +79,16 @@ public class StarParticles : MonoBehaviour
           
             // Initial life value
             particleArray[i].life = Random.value * 5.0f + 1.0f;
+            
+            index = i*6;
+            //Triangle 1 - bottom-left, top-left, top-right
+            vertexArray[index].uv.Set(0,0);
+            vertexArray[index+1].uv.Set(0,1);
+            vertexArray[index+2].uv.Set(1,1);
+            //Triangle 2 - bottom-left, top-right, bottom-right  // // 
+			vertexArray[index+3].uv.Set(0,0);
+            vertexArray[index+4].uv.Set(1,1);
+            vertexArray[index+5].uv.Set(1,0);
         }
 
         // create compute buffers
@@ -100,7 +100,7 @@ public class StarParticles : MonoBehaviour
         // bind the compute buffers to the shader and the compute shader
         shader.SetBuffer(kernelID, "particleBuffer", particleBuffer);
         shader.SetBuffer(kernelID, "vertexBuffer", vertexBuffer);
-        shader.SetBuffer(kernelID, "meshBuffer", meshBuffer);
+        shader.SetFloat("halfSize", quadSize*0.5f);
         
         material.SetBuffer("vertexBuffer", vertexBuffer);
     }

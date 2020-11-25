@@ -2,19 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StarParticles : MonoBehaviour
+#pragma warning disable 0649
+
+public class QuadParticles : MonoBehaviour
 {
 
     private Vector2 cursorPos;
 
     // struct
-    struct Vertex
-    {
-        public Vector3 position;
-        public Vector2 uv;
-        public Vector3 normal;
-    }
-
     struct Particle
     {
         public Vector3 position;
@@ -22,10 +17,8 @@ public class StarParticles : MonoBehaviour
         public float life;
     }
 
-    const int SIZE_VERTEX = 8 * sizeof(float);
     const int SIZE_PARTICLE = 7 * sizeof(float);
 
-    public GameObject star;
     public int particleCount = 10000;
     public Material material;
     public ComputeShader shader;
@@ -36,9 +29,7 @@ public class StarParticles : MonoBehaviour
     int numVerticesInMesh;
     int kernelID;
     ComputeBuffer particleBuffer;
-    ComputeBuffer vertexBuffer;
-    ComputeBuffer meshBuffer;
-
+    
     int groupSizeX; 
     
     // Use this for initialization
@@ -49,12 +40,6 @@ public class StarParticles : MonoBehaviour
 
     void Init()
     {
-        if (star == null)
-        {
-            Debug.LogError("No prefab. Cannot Init app");
-            return;
-        }
-
         // find the id of the kernel
         kernelID = shader.FindKernel("CSMain");
 
@@ -66,13 +51,8 @@ public class StarParticles : MonoBehaviour
         // initialize the particles
         Particle[] particleArray = new Particle[numParticles];
 
-        MeshFilter mf = star.GetComponent<MeshFilter>();
-        Mesh mesh = mf.mesh;
-
-        numVerticesInMesh = mesh.vertices.Length;
-        int numVertices = numParticles * numVerticesInMesh;
-        Vertex[] vertexArray = new Vertex[numVertices];
-
+        int numVertices = numParticles * 6;
+        
         Vector3 pos = new Vector3();
         
         for (int i = 0; i < numParticles; i++)
@@ -92,29 +72,22 @@ public class StarParticles : MonoBehaviour
         // create compute buffers
         particleBuffer = new ComputeBuffer(numParticles, SIZE_PARTICLE);
         particleBuffer.SetData(particleArray);
-        vertexBuffer = new ComputeBuffer(numVertices, SIZE_VERTEX);
-        vertexBuffer.SetData(vertexArray);
-
+        
         // bind the compute buffers to the shader and the compute shader
         shader.SetBuffer(kernelID, "particleBuffer", particleBuffer);
-        shader.SetBuffer(kernelID, "vertexBuffer", vertexBuffer);
-        shader.SetBuffer(kernelID, "meshBuffer", meshBuffer);
-        
-        material.SetBuffer("vertexBuffer", vertexBuffer);
     }
 
     void OnRenderObject()
     {
         material.SetPass(0);
-        Graphics.DrawProceduralNow(MeshTopology.Triangles, 6, numParticles);
+        Graphics.DrawProceduralNow(MeshTopology.Points, 1, numParticles);
     }
 
     void OnDestroy()
     {
         if (particleBuffer != null)
             particleBuffer.Release();
-        if (vertexBuffer != null)
-            vertexBuffer.Release();
+        )
     }
 
     // Update is called once per frame

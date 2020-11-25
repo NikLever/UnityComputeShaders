@@ -325,10 +325,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27e885abf0dea46ccbc7f5a3630fb561, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleCount: 1000
+  particleCount: 5000
   material: {fileID: 2100000, guid: e12e5284770014cd1a00bf00e8892b64, type: 2}
   shader: {fileID: 7200000, guid: 12df8c8a77f0548258a8f3ed55fe5e3d, type: 3}
-  quadSize: 1
+  quadSize: 0.239
 --- !u!4 &901185535
 Transform:
   m_ObjectHideFlags: 0
