@@ -37,7 +37,6 @@ public class QuadParticles : MonoBehaviour
     int kernelID;
     ComputeBuffer particleBuffer;
     ComputeBuffer vertexBuffer;
-    ComputeBuffer meshBuffer;
 
     int groupSizeX; 
     
