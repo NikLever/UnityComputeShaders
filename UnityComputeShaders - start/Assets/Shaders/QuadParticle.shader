@@ -10,7 +10,6 @@
 		LOD 200
 		
 		CGPROGRAM
-		// Physically based Standard lighting model, and enable shadows on all light types
 		#pragma vertex vert
 		#pragma fragment frag
 
@@ -23,9 +22,8 @@
 			float4 position : SV_POSITION;
 			float4 color : COLOR;
 			float2 uv: TEXCOORD0;
-			float life : LIFE;
 		};
-		// particles' data
+
 		sampler2D _MainTex;
 		
 		v2f vert(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)

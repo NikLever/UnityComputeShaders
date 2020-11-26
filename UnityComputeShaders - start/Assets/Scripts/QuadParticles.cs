@@ -51,7 +51,6 @@ public class QuadParticles : MonoBehaviour
         // initialize the particles
         Particle[] particleArray = new Particle[numParticles];
 
-        int numVertices = numParticles * 6;
         
         Vector3 pos = new Vector3();
         
