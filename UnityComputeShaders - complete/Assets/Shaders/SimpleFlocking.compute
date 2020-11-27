@@ -1,31 +1,10 @@
 ﻿#pragma kernel CSMain
 #define GROUP_SIZE 256
 
-float hash( float n )
-{
-	return frac(sin(n)*43758.5453);
-}
-
-// The noise function returns a value in the range -1.0f -> 1.0f
-float noise1( float3 x )
-{
-	float3 p = floor(x);
-	float3 f = frac(x);
-
-	f       = f*f*(3.0-2.0*f);
-	float n = p.x + p.y*57.0 + 113.0*p.z;
-
-	return lerp(lerp(lerp( hash(n+0.0), hash(n+1.0),f.x),
-					lerp( hash(n+57.0), hash(n+58.0),f.x),f.y),
-				lerp(lerp( hash(n+113.0), hash(n+114.0),f.x),
-					lerp( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
-}
-
 struct Boid
 {
 	float3 position;
 	float3 direction;
-	float noise_offset;
 };
 
 RWStructuredBuffer<Boid> boidsBuffer;
@@ -44,11 +23,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
 	Boid boid = boidsBuffer[id.x];
 
-	float noise = clamp(noise1(time / 100.0 + boid.noise_offset), -1, 1) * 2.0 - 1.0;
-	float velocity = boidSpeed * (1.0 + noise * boidSpeedVariation);
-
-	float3 pos = boid.position;
-	float3 rot = boid.direction;
+	//float3 pos = boid.position;
+	//float3 rot = boid.direction;
 
 	float3 separation = float3(0, 0.0, 0);
 	float3 alignment = float3(0.0, 0.0, 0.0);
@@ -82,9 +58,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
 	float3 direction = alignment + separation + cohesion;
 
-	float ip = exp(-rotationSpeed * deltaTime);
-	boid.direction = lerp((direction), normalize(boid.direction), ip);
-	boid.position += (boid.direction) * (velocity * deltaTime);
+	float prop = 0.94;//exp(-rotationSpeed * deltaTime);//0.9-0.98
+	boid.direction = lerp(direction, normalize(boid.direction), prop);
+	boid.position += boid.direction * boidSpeed * deltaTime;
 
 	boidsBuffer[id.x] = boid;
 }
