@@ -328,7 +328,7 @@ MonoBehaviour:
   particleCount: 5000
   material: {fileID: 2100000, guid: e12e5284770014cd1a00bf00e8892b64, type: 2}
   shader: {fileID: 7200000, guid: 12df8c8a77f0548258a8f3ed55fe5e3d, type: 3}
-  quadSize: 0.239
+  quadSize: 0.73
 --- !u!4 &901185535
 Transform:
   m_ObjectHideFlags: 0

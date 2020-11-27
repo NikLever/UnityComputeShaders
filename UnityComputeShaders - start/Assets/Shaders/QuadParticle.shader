@@ -31,7 +31,7 @@
 			v2f o = (v2f)0;
 
 			o.color = fixed4(1,0,0,1);
-			o.position = UnityWorldToClipPos(float3(0,0,0), 1.0f));
+			o.position = UnityWorldToClipPos(float4(0,0,0,1));
 			
 			return o;
 		}
