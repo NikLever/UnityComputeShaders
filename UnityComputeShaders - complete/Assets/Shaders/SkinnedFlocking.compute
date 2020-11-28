@@ -1,14 +1,12 @@
 ﻿#pragma kernel CSMain
 #define GROUP_SIZE 256
 
-#include "UnityCG.cginc"
-
 float hash( float n )
 {
 	return frac(sin(n)*43758.5453);
 }
 
-// The noise function returns a value in the range -1.0f -> 1.0f
+// The noise function returns a value in the range 0 -> 1
 float noise1( float3 x )
 {
 	float3 p = floor(x);
@@ -37,17 +35,17 @@ struct Boid
 
 RWStructuredBuffer<Boid> boidsBuffer;
 
-CBUFFER_START(Params)
-	float DeltaTime;
-	float RotationSpeed;
-	float BoidSpeed;
-	float BoidSpeedVariation;
-	float3 FlockPosition;
-	float NeighbourDistance;
-	uint boidsCount;
-	float BoidFrameSpeed;
-	int numOfFrames;
-CBUFFER_END
+float time;
+float deltaTime;
+float rotationSpeed;
+float boidSpeed;
+float boidSpeedVariation;
+float3 flockPosition;
+float neighbourDistance;
+uint boidsCount;
+float boidFrameSpeed;
+int numOfFrames;
+
 
 [numthreads(GROUP_SIZE,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -55,15 +53,15 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 	uint instanceId = id.x;
 	Boid boid = boidsBuffer[instanceId];
 
-	float noise = clamp(noise1(_Time / 100.0 + boid.noise_offset), -1, 1) * 2.0 - 1.0;
-	float velocity = BoidSpeed * (1.0 + noise * BoidSpeedVariation);
+	float noise = clamp(noise1(time / 100.0 + boid.noise_offset), -1, 1) * 2.0 - 1.0;
+	float velocity = boidSpeed * (1.0 + noise * boidSpeedVariation);
 
 	float3 boid_pos = boid.position;
 	float3 boid_dir = boid.direction;
 
-	float3 separation = float3(0, 0.0, 0);
-	float3 alignment = float3(0.0, 0.0, 0.0);
-	float3 cohesion = FlockPosition;
+	float3 separation = 0;
+	float3 alignment = 0;
+	float3 cohesion = flockPosition;
 
 	uint nearbyCount = 1; // Add self that is ignored in loop
 
@@ -71,15 +69,16 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 		if (i == instanceId)
 			continue;
 			
-		if (distance(boid_pos, boidsBuffer[i].position) < NeighbourDistance)
+		if (distance(boid_pos, boidsBuffer[i].position) < neighbourDistance)
 		{
 			float3 tempBoid_position = boidsBuffer[i].position;
 
-			float3 diff = boid_pos - tempBoid_position;
-			float diffLen = (length(diff));
-			float scaler = clamp(1.0 - diffLen / NeighbourDistance, 0.0, 1.0);
-			
-			separation += diff * (scaler / diffLen);
+			float3 offset = boid.position - tempBoid_position;
+			float dist = length(offset);
+			if (dist<neighbourDistance){
+				dist = max(dist, 0.000001);//Avoid division by zero
+				separation += offset * (1.0/dist - 1.0/neighbourDistance);
+			}
 			alignment += boidsBuffer[i].direction;
 			cohesion += tempBoid_position;
 
@@ -94,12 +93,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
 	float3 direction = alignment + separation + cohesion;
 
-	float ip = exp(-RotationSpeed * DeltaTime);
-	boid.direction = lerp((direction), normalize(boid_dir), ip);
+	float ip = exp(-rotationSpeed * deltaTime);
+	boid.direction = lerp(direction, normalize(boid_dir), ip);
 
-	boid.position += (boid.direction) * (velocity * DeltaTime);
+	boid.position += boid.direction * velocity * deltaTime;
  
-	float current_frame = (boid.frame + velocity * (DeltaTime * BoidFrameSpeed));
+	float current_frame = boid.frame + velocity * deltaTime * boidFrameSpeed;
 	int current_frame_floor = trunc(current_frame);
 	boid.frame = current_frame;
 	boid.next_frame = current_frame_floor + 1;

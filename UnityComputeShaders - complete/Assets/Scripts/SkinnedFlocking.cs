@@ -13,6 +13,18 @@ public class SkinnedFlocking : MonoBehaviour {
         public float next_frame;
         public float frame_interpolation;
         public float padding;
+        
+        public Boid(Vector3 pos, Vector3 dir, bool frameInterpolation){
+        	position.x = pos.x;
+        	position.y = pos.y;
+        	position.z = pos.z;
+        	direction.x = dir.x;
+        	direction.y = dir.y;
+        	direction.z = dir.z;
+        	noise_offset = Random.value * 1000.0f;
+        	speed = frame = next_frame = padding = 0;
+        	frame_interpolation = (frameInterpolation) ? 1 : 0;
+        }
     }
 
     public ComputeShader shader;
@@ -25,111 +37,67 @@ public class SkinnedFlocking : MonoBehaviour {
     private int numOfFrames;
     public int boidsCount;
     public float spawnRadius;
-    public Boid[] boidsArray;
     public Transform target;
-
+	public Material boidMaterial;
+	public float rotationSpeed = 1f;
+    public float boidSpeed = 1f;
+    public float neighbourDistance = 1f;
+    public float boidSpeedVariation = 1f;
+    public float boidFrameSpeed = 10f;
+    public bool frameInterpolation = true;
+    
     public Mesh boidMesh;
 
     private int kernelHandle;
     private ComputeBuffer boidsBuffer;
     private ComputeBuffer vertexAnimationBuffer;
-    public Material boidMaterial;
     ComputeBuffer argsBuffer;
+    uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     MaterialPropertyBlock props;
-
-    const int GROUP_SIZE = 256;
-
+    int groupSizeX;
+	Boid[] boidsArray;
+	int numOfBoids;
+	Bounds bounds;
+    
     void Start()
     {
-        // Initialize the indirect draw args buffer.
-        argsBuffer = new ComputeBuffer(
-            1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments
-        );
+    	kernelHandle = shader.FindKernel("CSMain");
 
-        argsBuffer.SetData(new uint[5] {
-            boidMesh.GetIndexCount(0), (uint) boidsCount, 0, 0, 0
-        });
+        uint x;
+        shader.GetKernelThreadGroupSizes(kernelHandle, out x, out _, out _);
+        groupSizeX = Mathf.CeilToInt((float)boidsCount / (float)x);
+        numOfBoids = groupSizeX * (int)x;
 
-        // This property block is used only for avoiding an instancing bug.
+        bounds = new Bounds(Vector3.zero, Vector3.one * 1000);
         props = new MaterialPropertyBlock();
         props.SetFloat("_UniqueID", Random.value);
 
-        this.boidsArray = new Boid[this.boidsCount];
-        this.kernelHandle = shader.FindKernel("CSMain");
-
-        for (int i = 0; i < this.boidsCount; i++)
-        {
-            this.boidsArray[i] = this.CreateBoidData();
-            this.boidsArray[i].noise_offset = Random.value * 1000.0f;
-        }
-
-        boidsBuffer = new ComputeBuffer(boidsCount, 48);
-        boidsBuffer.SetData(this.boidsArray);
-
+        InitBoids();
         GenerateSkinnedAnimationForGPUBuffer();
+        InitShader();
     }
 
-    Boid CreateBoidData()
+	private void InitBoids()
     {
-        Boid boidData = new Boid();
-        Vector3 pos = transform.position + Random.insideUnitSphere * spawnRadius;
-        Quaternion rot = Quaternion.Slerp(transform.rotation, Random.rotation, 0.3f);
-        boidData.position = pos;
-        boidData.direction = rot.eulerAngles;
+        boidsArray = new Boid[numOfBoids];
 
-        return boidData;
+        for (int i = 0; i < numOfBoids; i++)
+        {
+            Vector3 pos = transform.position + Random.insideUnitSphere * spawnRadius;
+            Quaternion rot = Quaternion.Slerp(transform.rotation, Random.rotation, 0.3f);
+            boidsArray[i] = new Boid(pos, rot.eulerAngles, frameInterpolation);
+        }
     }
 
-    public float RotationSpeed = 1f;
-    public float BoidSpeed = 1f;
-    public float NeighbourDistance = 1f;
-    public float BoidSpeedVariation = 1f;
-    public float BoidFrameSpeed = 10f;
-    public bool FrameInterpolation = true;
-    void Update()
-    {
-        shader.SetFloat("DeltaTime", Time.deltaTime);
-        shader.SetFloat("RotationSpeed", RotationSpeed);
-        shader.SetFloat("BoidSpeed", BoidSpeed);
-        shader.SetFloat("BoidSpeedVariation", BoidSpeedVariation);
-        shader.SetVector("FlockPosition", target.transform.position);
-        shader.SetFloat("NeighbourDistance", NeighbourDistance);
-        shader.SetFloat("BoidFrameSpeed", BoidFrameSpeed);
-        shader.SetInt("boidsCount", boidsCount);
-        shader.SetInt("numOfFrames", numOfFrames);
-        shader.SetBuffer(this.kernelHandle, "boidsBuffer", boidsBuffer);
-        shader.Dispatch(this.kernelHandle, this.boidsCount / GROUP_SIZE + 1, 1, 1);
-
-        boidMaterial.SetBuffer("boidsBuffer", boidsBuffer);
-
-        if (FrameInterpolation && !boidMaterial.IsKeywordEnabled("FRAME_INTERPOLATION"))
-            boidMaterial.EnableKeyword("FRAME_INTERPOLATION");
-        if (!FrameInterpolation && boidMaterial.IsKeywordEnabled("FRAME_INTERPOLATION"))
-            boidMaterial.DisableKeyword("FRAME_INTERPOLATION");
-
-        boidMaterial.SetInt("numOfFrames", numOfFrames);
-
-        Graphics.DrawMeshInstancedIndirect(
-            boidMesh, 0, boidMaterial,
-            new Bounds(Vector3.zero, Vector3.one * 1000),
-            argsBuffer, 0, props
-        );
-    }
-
-    void OnDestroy()
-    {
-        if (boidsBuffer != null) boidsBuffer.Release();
-        if (argsBuffer != null) argsBuffer.Release();
-        if (vertexAnimationBuffer != null) vertexAnimationBuffer.Release();
-    }
-
-    private void GenerateSkinnedAnimationForGPUBuffer()
+private void GenerateSkinnedAnimationForGPUBuffer()
     {
         boidSMR = boidObject.GetComponentInChildren<SkinnedMeshRenderer>();
         animator = boidObject.GetComponentInChildren<Animator>();
         int iLayer = 0;
         AnimatorStateInfo aniStateInfo = animator.GetCurrentAnimatorStateInfo(iLayer);
 
+		//boidMesh = boidSMR.sharedMesh;
+		
         Mesh bakedMesh = new Mesh();
         float sampleTime = 0;
         float perFrameTime = 0;
@@ -160,5 +128,53 @@ public class SkinnedFlocking : MonoBehaviour {
         boidMaterial.SetBuffer("vertexAnimation", vertexAnimationBuffer);
 
         boidObject.SetActive(false);
+    }
+    
+    void InitShader()
+    {
+        boidsBuffer = new ComputeBuffer(numOfBoids, 12 * sizeof(float));
+        boidsBuffer.SetData(boidsArray);
+
+        argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+        if (boidMesh != null)
+        {
+            args[0] = (uint)boidMesh.GetIndexCount(0);
+            args[1] = (uint)numOfBoids;
+        }
+        argsBuffer.SetData(args);
+
+        shader.SetFloat("rotationSpeed", rotationSpeed);
+        shader.SetFloat("boidSpeed", boidSpeed);
+        shader.SetFloat("boidSpeedVariation", boidSpeedVariation);
+        shader.SetVector("flockPosition", target.transform.position);
+        shader.SetFloat("neighbourDistance", neighbourDistance);
+        shader.SetInt("boidsCount", numOfBoids);
+        shader.SetFloat("boidFrameSpeed", boidFrameSpeed);
+        shader.SetInt("numOfFrames", numOfFrames);
+        
+        shader.SetBuffer(kernelHandle, "boidsBuffer", boidsBuffer);
+        boidMaterial.SetBuffer("boidsBuffer", boidsBuffer);
+        
+        if (frameInterpolation && !boidMaterial.IsKeywordEnabled("FRAME_INTERPOLATION"))
+            boidMaterial.EnableKeyword("FRAME_INTERPOLATION");
+        if (!frameInterpolation && boidMaterial.IsKeywordEnabled("FRAME_INTERPOLATION"))
+            boidMaterial.DisableKeyword("FRAME_INTERPOLATION");
+    }
+    
+    void Update()
+    {
+    	shader.SetFloat("time", Time.time);
+		shader.SetFloat("deltaTime", Time.deltaTime);
+        
+        shader.Dispatch(kernelHandle, groupSizeX, 1, 1);
+
+        Graphics.DrawMeshInstancedIndirect( boidMesh, 0, boidMaterial, bounds, argsBuffer);
+    }
+
+    void OnDestroy()
+    {
+        if (boidsBuffer != null) boidsBuffer.Release();
+        if (argsBuffer != null) argsBuffer.Release();
+        if (vertexAnimationBuffer != null) vertexAnimationBuffer.Release();
     }
 }
