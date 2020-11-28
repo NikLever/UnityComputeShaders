@@ -81,8 +81,6 @@ public class InstancedFlocking : MonoBehaviour
         {
             args[0] = (uint)boidMesh.GetIndexCount(0);
             args[1] = (uint)numOfBoids;
-            args[2] = (uint)boidMesh.GetIndexStart(0);
-            args[3] = (uint)boidMesh.GetBaseVertex(0);
         }
         argsBuffer.SetData(args);
 
@@ -104,7 +102,7 @@ public class InstancedFlocking : MonoBehaviour
 
         shader.Dispatch(this.kernelHandle, groupSizeX, 1, 1);
 
-        Graphics.DrawMeshInstancedIndirect(boidMesh, 0, boidMaterial, bounds, argsBuffer, 0);
+        Graphics.DrawMeshInstancedIndirect(boidMesh, 0, boidMaterial, bounds, argsBuffer);
     }
 
     void OnDestroy()

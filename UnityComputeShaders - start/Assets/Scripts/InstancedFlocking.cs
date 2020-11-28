@@ -21,7 +21,8 @@ public class InstancedFlocking : MonoBehaviour
             noise_offset = offset;
         }
     }
-
+    const int SIZE_BOID = 7 * sizeof(float);
+    
     public ComputeShader shader;
 
     public float rotationSpeed = 1f;
@@ -73,18 +74,11 @@ public class InstancedFlocking : MonoBehaviour
 
     void InitShader()
     {
-        boidsBuffer = new ComputeBuffer(numOfBoids, 7 * sizeof(float));
+        boidsBuffer = new ComputeBuffer(numOfBoids, SIZE_BOID);
         boidsBuffer.SetData(boidsArray);
 
-        argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
-        if (boidMesh != null)
-        {
-            args[0] = (uint)boidMesh.GetIndexCount(0);
-            args[1] = (uint)numOfBoids;
-            args[2] = (uint)boidMesh.GetIndexStart(0);
-            args[3] = (uint)boidMesh.GetBaseVertex(0);
-        }
-        argsBuffer.SetData(args);
+        //Initialize args buffer
+
 
         shader.SetBuffer(this.kernelHandle, "boidsBuffer", boidsBuffer);
         shader.SetFloat("rotationSpeed", rotationSpeed);

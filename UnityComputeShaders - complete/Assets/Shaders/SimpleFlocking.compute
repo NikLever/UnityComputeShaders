@@ -23,15 +23,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
 	Boid boid = boidsBuffer[id.x];
 
-	//float3 pos = boid.position;
-	//float3 rot = boid.direction;
-
-	float3 separation = float3(0, 0.0, 0);
-	float3 alignment = float3(0.0, 0.0, 0.0);
+	float3 separation = 0;
+	float3 alignment = 0;
 	float3 cohesion = flockPosition;
 
 	uint nearbyCount = 1; // Add self that is ignored in loop
-
+	
 	for (int i = 0; i < boidsCount; i++)
 	{
 		if (i != int(id.x))
@@ -39,11 +36,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 			Boid tempBoid = boidsBuffer[i];
 			if (distance(boid.position, tempBoid.position) < neighbourDistance)
 			{
-				float3 diff = boid.position - tempBoid.position;
-				float diffLen = length(diff);
-				float scaler = clamp(1.0 - diffLen / neighbourDistance, 0.0, 1.0);
-				separation += diff * (scaler / diffLen);
-				
+				float3 offset = boid.position - tempBoid.position;
+				float dist = length(offset);
+				if (dist<neighbourDistance){
+					dist = max(dist, 0.000001);//Avoid division by zero
+					separation += offset * (1.0/dist - 1.0/neighbourDistance);
+				}
 				alignment += tempBoid.direction;
 				cohesion += tempBoid.position;
 				nearbyCount++;
@@ -58,7 +56,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
 	float3 direction = alignment + separation + cohesion;
 
-	float prop = 0.94;//exp(-rotationSpeed * deltaTime);//0.9-0.98
+	float prop = 0.94;
 	boid.direction = lerp(direction, normalize(boid.direction), prop);
 	boid.position += boid.direction * boidSpeed * deltaTime;
 

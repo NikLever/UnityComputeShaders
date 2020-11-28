@@ -28,7 +28,7 @@
         #pragma surface surf Standard vertex:vert addshadow nolightmap
         #pragma instancing_options procedural:setup
 
-        float4x4 _LookAtMatrix;
+        float4x4 _Matrix;
         float3 _BoidPosition;
 
          #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
@@ -41,25 +41,12 @@
 
             StructuredBuffer<Boid> boidsBuffer; 
          #endif
-
-        float4x4 look_at_matrix(float3 at, float3 eye, float3 up) {
-            float3 zaxis = normalize(at - eye);
-            float3 xaxis = normalize(cross(up, zaxis));
-            float3 yaxis = cross(zaxis, xaxis);
-            return float4x4(
-                xaxis.x, yaxis.x, zaxis.x, 0,
-                xaxis.y, yaxis.y, zaxis.y, 0,
-                xaxis.z, yaxis.z, zaxis.z, 0,
-                0, 0, 0, 1
-            );
-        }
      
          void vert(inout appdata_full v, out Input data)
         {
             UNITY_INITIALIZE_OUTPUT(Input, data);
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                v.vertex = mul(_LookAtMatrix, v.vertex);
                 v.vertex.xyz += _BoidPosition;
             #endif
         }
@@ -68,7 +55,6 @@
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 _BoidPosition = boidsBuffer[unity_InstanceID].position;
-                _LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
             #endif
         }
  
