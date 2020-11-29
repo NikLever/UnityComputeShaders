@@ -41,8 +41,7 @@ Shader "Flocking/Skinned" { // StructuredBuffer + SurfaceShader
         #pragma surface surf Standard vertex:vert addshadow nolightmap
         #pragma instancing_options procedural:setup
 
-        float4x4 _LookAtMatrix;
-        float3 _BoidPosition;
+        float4x4 _Matrix;
         int _CurrentFrame;
         int _NextFrame;
         float _FrameInterpolation;
@@ -54,25 +53,21 @@ Shader "Flocking/Skinned" { // StructuredBuffer + SurfaceShader
                 float3 position;
                 float3 direction;
                 float noise_offset;
-                float speed;
                 float frame;
-                float next_frame;
-	            float frame_interpolation;
-                float padding;
             };
 
             StructuredBuffer<Boid> boidsBuffer; 
             StructuredBuffer<float4> vertexAnimation; 
          #endif
 
-        float4x4 look_at_matrix(float3 at, float3 eye, float3 up) {
-            float3 zaxis = normalize(at - eye);
+        float4x4 create_matrix(float3 pos, float3 dir, float3 up) {
+            float3 zaxis = normalize(dir);
             float3 xaxis = normalize(cross(up, zaxis));
             float3 yaxis = cross(zaxis, xaxis);
             return float4x4(
-                xaxis.x, yaxis.x, zaxis.x, 0,
-                xaxis.y, yaxis.y, zaxis.y, 0,
-                xaxis.z, yaxis.z, zaxis.z, 0,
+                xaxis.x, yaxis.x, zaxis.x, pos.x,
+                xaxis.y, yaxis.y, zaxis.y, pos.y,
+                xaxis.z, yaxis.z, zaxis.z, pos.z,
                 0, 0, 0, 1
             );
         }
@@ -80,27 +75,14 @@ Shader "Flocking/Skinned" { // StructuredBuffer + SurfaceShader
         void vert(inout appdata_custom v)
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                #ifdef FRAME_INTERPOLATION
-                    v.vertex = lerp(vertexAnimation[v.id * numOfFrames + _CurrentFrame], vertexAnimation[v.id * numOfFrames + _NextFrame], _FrameInterpolation);
-
-                #else
-                    v.vertex = vertexAnimation[v.id * numOfFrames + _CurrentFrame];
-                #endif
-                v.vertex = mul(_LookAtMatrix, v.vertex);
-                v.vertex.xyz += _BoidPosition;
+                v.vertex = mul(_Matrix, v.vertex);
             #endif
         }
 
         void setup()
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                _BoidPosition = boidsBuffer[unity_InstanceID].position;
-                _LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
-                _CurrentFrame = boidsBuffer[unity_InstanceID].frame;
-                #ifdef FRAME_INTERPOLATION
-                    _NextFrame = boidsBuffer[unity_InstanceID].next_frame;
-                    _FrameInterpolation = boidsBuffer[unity_InstanceID].frame_interpolation;
-                #endif
+                _Matrix = create_matrix(boidsBuffer[unity_InstanceID].position, boidsBuffer[unity_InstanceID].direction, float3(0.0, 1.0, 0.0));
             #endif
         }
  

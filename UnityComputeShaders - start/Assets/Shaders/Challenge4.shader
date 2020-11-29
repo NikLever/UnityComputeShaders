@@ -30,7 +30,7 @@
 
         float3 _BoidPosition;
         float _FinOffset;
-        float4x4 _LookAtMatrix;
+        float4x4 _Matrix;
         
          #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
             struct Boid
@@ -44,14 +44,14 @@
             StructuredBuffer<Boid> boidsBuffer; 
          #endif
 
-        float4x4 look_at_matrix(float3 at, float3 eye, float3 up) {
-            float3 zaxis = normalize(at - eye);
+        float4x4 create_matrix(float3 pos, float3 dir, float3 up) {
+            float3 zaxis = normalize(dir);
             float3 xaxis = normalize(cross(up, zaxis));
             float3 yaxis = cross(zaxis, xaxis);
             return float4x4(
-                xaxis.x, yaxis.x, zaxis.x, 0,
-                xaxis.y, yaxis.y, zaxis.y, 0,
-                xaxis.z, yaxis.z, zaxis.z, 0,
+                xaxis.x, yaxis.x, zaxis.x, pos.x,
+                xaxis.y, yaxis.y, zaxis.y, pos.y,
+                xaxis.z, yaxis.z, zaxis.z, pos.z,
                 0, 0, 0, 1
             );
         }
@@ -64,8 +64,7 @@
                 if (v.vertex.z<-0.2){
                     v.vertex.x += (sin(abs(v.vertex.z+0.2)*5*UNITY_HALF_PI + 3*UNITY_HALF_PI) + 1) * 0.3 * _FinOffset;
                 }
-                v.vertex = mul(_LookAtMatrix, v.vertex);
-                v.vertex.xyz += _BoidPosition;
+                v.vertex = mul(_Matrix, v.vertex);
             #endif
         }
 
@@ -73,8 +72,7 @@
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 _FinOffset = sin(boidsBuffer[unity_InstanceID].theta);
-                _BoidPosition = boidsBuffer[unity_InstanceID].position;
-                _LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
+                _Matrix = create_matrix(boidsBuffer[unity_InstanceID].position, boidsBuffer[unity_InstanceID].direction, float3(0.0, 1.0, 0.0));
             #endif
         }
  

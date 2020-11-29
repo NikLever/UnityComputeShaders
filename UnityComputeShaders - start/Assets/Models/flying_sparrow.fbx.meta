@@ -1,38 +1,86 @@
 fileFormatVersion: 2
 guid: 8ec9bd4530b42b446938d365f3bba972
-timeCreated: 1514459003
-licenseType: Pro
 ModelImporter:
-  serializedVersion: 22
-  fileIDToRecycleName:
-    100000: Bone
-    100002: Bone1
-    100004: Bone2
-    100006: Bone3
-    100008: Bone4
-    100010: Bone5
-    100012: //RootNode
-    100014: Mesh1
-    100016: Scene_Root
-    100018: Scene_Root1
-    400000: Bone
-    400002: Bone1
-    400004: Bone2
-    400006: Bone3
-    400008: Bone4
-    400010: Bone5
-    400012: //RootNode
-    400014: Mesh1
-    400016: Scene_Root
-    400018: Scene_Root1
-    2100000: Texture
-    4300000: Mesh1
-    7400000: Animation
-    9500000: //RootNode
-    13700000: Mesh1
+  serializedVersion: 19301
+  internalIDToNameTable:
+  - first:
+      1: 100000
+    second: Bone
+  - first:
+      1: 100002
+    second: Bone1
+  - first:
+      1: 100004
+    second: Bone2
+  - first:
+      1: 100006
+    second: Bone3
+  - first:
+      1: 100008
+    second: Bone4
+  - first:
+      1: 100010
+    second: Bone5
+  - first:
+      1: 100012
+    second: //RootNode
+  - first:
+      1: 100014
+    second: Mesh1
+  - first:
+      1: 100016
+    second: Scene_Root
+  - first:
+      1: 100018
+    second: Scene_Root1
+  - first:
+      4: 400000
+    second: Bone
+  - first:
+      4: 400002
+    second: Bone1
+  - first:
+      4: 400004
+    second: Bone2
+  - first:
+      4: 400006
+    second: Bone3
+  - first:
+      4: 400008
+    second: Bone4
+  - first:
+      4: 400010
+    second: Bone5
+  - first:
+      4: 400012
+    second: //RootNode
+  - first:
+      4: 400014
+    second: Mesh1
+  - first:
+      4: 400016
+    second: Scene_Root
+  - first:
+      4: 400018
+    second: Scene_Root1
+  - first:
+      21: 2100000
+    second: Texture
+  - first:
+      43: 4300000
+    second: Mesh1
+  - first:
+      74: 7400000
+    second: FlapWings
+  - first:
+      95: 9500000
+    second: //RootNode
+  - first:
+      137: 13700000
+    second: Mesh1
   externalObjects: {}
   materials:
-    importMaterials: 1
+    materialImportMode: 1
     materialName: 0
     materialSearch: 1
     materialLocation: 1
@@ -49,6 +97,7 @@ ModelImporter:
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
+    importConstraints: 0
     animationCompression: 1
     animationRotationError: 0.5
     animationPositionError: 0.5
@@ -56,24 +105,59 @@ ModelImporter:
     animationWrapMode: 0
     extraExposedTransformPaths: []
     extraUserProperties: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: FlapWings
+      takeName: Animation
+      internalID: 0
+      firstFrame: 0
+      lastFrame: 24
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
     isReadable: 1
   meshes:
     lODScreenPercentages: []
     globalScale: 0.25
     meshCompression: 0
     addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
     importLights: 1
+    fileIdsGeneration: 1
     swapUVChannels: 0
     generateSecondaryUV: 0
     useFileUnits: 1
-    optimizeMeshForGPU: 1
     keepQuads: 0
     weldVertices: 1
     preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8
     secondaryUVAreaDistortion: 15.000001
@@ -85,10 +169,13 @@ ModelImporter:
     normalImportMode: 0
     tangentImportMode: 3
     normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 1
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
   importAnimation: 1
-  copyAvatar: 0
   humanDescription:
-    serializedVersion: 2
+    serializedVersion: 3
     human: []
     skeleton: []
     armTwist: 0.5
@@ -98,14 +185,16 @@ ModelImporter:
     armStretch: 0.05
     legStretch: 0.05
     feetSpacing: 0
+    globalScale: 0.25
     rootMotionBoneName: 
-    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1
   lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 2
   humanoidOversampling: 1
+  avatarSetup: 1
   additionalBone: 0
   userData: 
   assetBundleName: 

@@ -9,7 +9,7 @@ public class SimpleFlocking : MonoBehaviour
         public Vector3 position;
         public Vector3 direction;
         
-        public Boid(Vector3 pos, float offset)
+        public Boid(Vector3 pos)
         {
             position.x = pos.x;
             position.y = pos.y;
@@ -59,8 +59,7 @@ public class SimpleFlocking : MonoBehaviour
         for (int i = 0; i < numOfBoids; i++)
         {
             Vector3 pos = transform.position + Random.insideUnitSphere * spawnRadius;
-            float offset = Random.value * 1000.0f;
-            boidsArray[i] = new Boid(pos, offset);
+            boidsArray[i] = new Boid(pos);
             boids[i] = Instantiate(boidPrefab, pos, Quaternion.identity) as GameObject;
             boidsArray[i].direction = boids[i].transform.forward;
         }
@@ -71,7 +70,7 @@ public class SimpleFlocking : MonoBehaviour
         boidsBuffer = new ComputeBuffer(numOfBoids, 6 * sizeof(float));
         boidsBuffer.SetData(boidsArray);
 
-        shader.SetBuffer(this.kernelHandle, "boidsBuffer", boidsBuffer);
+        shader.SetBuffer(kernelHandle, "boidsBuffer", boidsBuffer);
         shader.SetFloat("rotationSpeed", rotationSpeed);
         shader.SetFloat("boidSpeed", boidSpeed);
         shader.SetFloat("boidSpeedVariation", boidSpeedVariation);
@@ -85,7 +84,7 @@ public class SimpleFlocking : MonoBehaviour
         shader.SetFloat("time", Time.time);
         shader.SetFloat("deltaTime", Time.deltaTime);
 
-        shader.Dispatch(this.kernelHandle, groupSizeX, 1, 1);
+        shader.Dispatch(kernelHandle, groupSizeX, 1, 1);
 
         boidsBuffer.GetData(boidsArray);
 

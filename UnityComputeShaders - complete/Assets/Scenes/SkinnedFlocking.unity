@@ -433,14 +433,14 @@ MonoBehaviour:
   boidsCount: 2000
   spawnRadius: 10
   target: {fileID: 1669663790}
-  boidMaterial: {fileID: 2100000, guid: 167b6806939d4a24497f112481564573, type: 2}
-  rotationSpeed: 1
-  boidSpeed: 1
-  neighbourDistance: 1
-  boidSpeedVariation: 1
+  rotationSpeed: 4
+  boidSpeed: 6
+  neighbourDistance: 2
+  boidSpeedVariation: 0.9
   boidFrameSpeed: 10
   frameInterpolation: 1
   boidMesh: {fileID: 4300000, guid: 8ec9bd4530b42b446938d365f3bba972, type: 3}
+  boidMaterial: {fileID: 2100000, guid: 167b6806939d4a24497f112481564573, type: 2}
 --- !u!4 &1669663790
 Transform:
   m_ObjectHideFlags: 0

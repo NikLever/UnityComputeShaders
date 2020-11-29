@@ -90,8 +90,6 @@ public class Challenge4 : MonoBehaviour
         {
             args[0] = (uint)boidMesh.GetIndexCount(0);
             args[1] = (uint)numOfBoids;
-            args[2] = (uint)boidMesh.GetIndexStart(0);
-            args[3] = (uint)boidMesh.GetBaseVertex(0);
         }
         argsBuffer.SetData(args);
 

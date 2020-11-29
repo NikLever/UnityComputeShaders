@@ -6,7 +6,7 @@ float hash( float n )
 	return frac(sin(n)*43758.5453);
 }
 
-// The noise function returns a value in the range 0 -> 1
+// The noise function returns a value in the range -1.0f -> 1.0f
 float noise1( float3 x )
 {
 	float3 p = floor(x);
@@ -28,9 +28,7 @@ struct Boid
 	float noise_offset;
 	float speed;
 	float frame;
-	float next_frame;
-	float frame_interpolation;
-	float padding;
+	float3 padding;
 };
 
 RWStructuredBuffer<Boid> boidsBuffer;
@@ -46,7 +44,6 @@ uint boidsCount;
 float boidFrameSpeed;
 int numOfFrames;
 
-
 [numthreads(GROUP_SIZE,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
@@ -59,8 +56,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 	float3 boid_pos = boid.position;
 	float3 boid_dir = boid.direction;
 
-	float3 separation = 0;
-	float3 alignment = 0;
+	float3 separation = float3(0, 0.0, 0);
+	float3 alignment = float3(0.0, 0.0, 0.0);
 	float3 cohesion = flockPosition;
 
 	uint nearbyCount = 1; // Add self that is ignored in loop
@@ -98,18 +95,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
 	boid.position += boid.direction * velocity * deltaTime;
  
-	float current_frame = boid.frame + velocity * deltaTime * boidFrameSpeed;
-	int current_frame_floor = trunc(current_frame);
-	boid.frame = current_frame;
-	boid.next_frame = current_frame_floor + 1;
-	boid.frame_interpolation = current_frame - current_frame_floor;
-	if (current_frame_floor >= numOfFrames) {
-		boid.frame = 0;
-		boid.next_frame = 1;
-	}
-	else if (current_frame_floor >= numOfFrames - 1)
-		boid.next_frame = 0;
-
+	boid.frame = boid.frame + velocity * deltaTime * boidFrameSpeed;
+	if (boid.frame >= numOfFrames) boid.frame -= numOfFrames;
+	
 	boidsBuffer[id.x] = boid;
 }
 
