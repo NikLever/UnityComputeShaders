@@ -34,14 +34,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 		if (i != int(id.x))
 		{
 			Boid tempBoid = boidsBuffer[i];
-			if (distance(boid.position, tempBoid.position) < neighbourDistance)
+			float3 offset = boid.position - tempBoid.position;
+			float dist = max(length(offset), 0.00001);
+			if (dist < neighbourDistance)
 			{
-				float3 offset = boid.position - tempBoid.position;
-				float dist = length(offset);
-				if (dist<neighbourDistance){
-					dist = max(dist, 0.000001);//Avoid division by zero
-					separation += offset * (1.0/dist - 1.0/neighbourDistance);
-				}
+				separation += offset * (1.0/dist - 1.0/neighbourDistance);
 				alignment += tempBoid.direction;
 				cohesion += tempBoid.position;
 				nearbyCount++;
