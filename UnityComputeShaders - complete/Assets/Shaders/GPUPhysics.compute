@@ -1,0 +1,419 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#define CLEAR_GRID_THREAD_COUNT 64
+#define RIGID_BODY_THREAD_COUNT 64
+#define PARTICLE_THREAD_COUNT 64
+
+#include "Quaternion.cginc"
+
+// Kernels
+// Per Rigid Body	0
+#pragma kernel GenerateParticleValues
+
+// Per Grid Cell	1
+#pragma kernel ClearGrid
+
+// Per Particle		2
+#pragma kernel PopulateGrid
+
+// Per Particle		3
+#pragma kernel CollisionDetection
+
+// Per Rigid Body	4
+#pragma kernel ComputeMomenta
+
+// Per Rigid Body	5
+#pragma kernel ComputePositionAndRotation
+
+// Per Rigid Body	6
+#pragma kernel SavePreviousPositionAndRotation
+
+struct RigidBody{
+	float3 position;
+	float4 quaternion;
+	float3 velocity;
+	float3 angularVelocity;
+	float3 prevPosition;
+	float4 prevQuaternion;
+	int particleIndex;
+	int particleCount;
+	float2 padding;
+};
+RWStructuredBuffer<RigidBody> rigidBodies;
+
+struct Particle{
+	float3 position;
+	float3 velocity;
+	float3 force;
+	float3 relativePosition;
+	float3 initialRelativePosition;
+	float padding;
+};
+RWStructuredBuffer<Particle> particles;
+
+float deltaTime;
+float particleMass;
+float3x3 inertialTensor;
+float3x3 inverseInertialTensor;
+
+
+//////////////////////////////
+// Generate Particle Values //
+//////////////////////////////
+// Per Rigid Body
+// Use rigidBodyPositions and 
+// rigidBodyQuaternions to
+// Generate particlePositions
+// and particleRelativePositions
+// and particleVelocities
+//
+//////////////////////////////
+
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
+{
+	RigidBody body = rigidBodies[id.x];
+	
+	for (int i = 0; i < body.particleCount; i++) {
+		int p_id = body.particleIndex + i;
+		Particle particle = particles[p_id];
+		particle.relativePosition = quat_mul(body.quaternion, particle.initialRelativePosition);
+		particle.position = body.position + particle.relativePosition;
+		particle.velocity = body.velocity + cross(body.angularVelocity, particle.relativePosition);
+	}
+}
+
+
+//////////////////////
+// Grid Generation //
+/////////////////////
+// Per Grid Cell
+// Use particlePositions
+// to populate the
+// voxelCollisionGrid
+// Input
+// RWStructuredBuffer<float3> particles; (defined above)
+int3 gridDimensions;
+float3 gridStartPosition;
+int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
+float particleDiameter;
+// Output
+RWStructuredBuffer<int4> voxelCollisionGrid;
+// DEBUG ONLY
+RWStructuredBuffer<int3> debugParticleVoxelPositions;
+[numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
+void ClearGrid (uint3 id : SV_DispatchThreadID)
+{
+	voxelCollisionGrid[id.x].r = -1;
+	voxelCollisionGrid[id.x].g = -1;
+	voxelCollisionGrid[id.x].b = -1;
+	voxelCollisionGrid[id.x].a = -1;
+}
+
+// Returns the grid index for particle p
+// equivalent to gridIndexFromThree(gridIndexThree(p_id))
+int gridIndex(int p_id) {
+	int3 gridLocation = (particle[p_id].position - gridStartPosition) / particleDiameter;
+	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void PopulateGrid (uint3 id : SV_DispatchThreadID)
+{
+	int p_id = id.x;
+	int gridIndex = gridIndex(p_id);
+	// clamp gridIndex?
+	if (gridIndex < gridMax && gridIndex > -1)
+	{
+		int originalValue = 0;
+		InterlockedCompareExchange(voxelCollisionGrid[gridIndex].x, -1, p_id, originalValue);
+		if (originalValue != -1)
+			InterlockedCompareExchange(voxelCollisionGrid[gridIndex].y, -1, p_id, originalValue);
+		if (originalValue != -1)
+			InterlockedCompareExchange(voxelCollisionGrid[gridIndex].z, -1, p_id, originalValue);
+		if (originalValue != -1)
+			InterlockedCompareExchange(voxelCollisionGrid[gridIndex].w, -1, p_id, originalValue);
+	}
+}
+
+/////////////////////////
+// Collision Detection //
+/////////////////////////
+// Per Particle
+// Use particlePositions, grid and velocity to compute Particle force
+// Input
+// StructuredBuffer<float3> particlePositions; (defined in Particle Value computation)
+// StructuredBuffer<float3> particleVelocities; (defined in Particle Value computation)
+// RWStructuredBuffer<int4> voxelCollisionGrid; (defined in Grid Generation)
+float springCoefficient;
+float dampingCoefficient;
+float tangentialCoefficient;
+// Output
+RWStructuredBuffer<float3> particleForces;
+float3 _collisionReaction(int j_id, int i_id)
+{
+	
+	// the force on particle i after colliding with particle j is modelled as follows
+	float3 relativePosition = particlePositions[j_id] - particlePositions[i_id]; // position of j relative to i
+	float relativePositionMagnitude = length(relativePosition);
+
+	if (relativePositionMagnitude < particleDiameter)
+	{
+		float3 relativePositionNormalized = relativePosition / relativePositionMagnitude;
+
+		// repulsive force (Equation 10)
+		float3 repulsiveForce = -springCoefficient * (particleDiameter - relativePositionMagnitude) * relativePositionNormalized;
+		// damping force (Equation 11)
+		// https://www2.msm.ctw.utwente.nl/sluding/PAPERS/luding_alert2008.pdf 
+		// says that the damping force acts along the normal....
+		// not sure whether relativeVelocity is relative to particle i's position or particle i's velocity
+		// using velocity here
+		float3 relativeVelocity = particleVelocities[j_id] - particleVelocities[i_id]; // not sure if correct
+		// project relative velocity along the relative position
+		/*
+		// Projects a vector onto another vector.
+        public static Vector3 Project(Vector3 vector, Vector3 onNormal)
+        {
+            float sqrMag = Dot(onNormal, onNormal);
+            if (sqrMag < Mathf.Epsilon)
+                return zero;
+            else
+                return onNormal * Dot(vector, onNormal) / sqrMag;
+        }
+
+		*/
+		//relativeVelocity = relativePositionNormalized * dot(relativeVelocity, relativePositionNormalized);
+		float3 dampingForce = dampingCoefficient * relativeVelocity;
+
+		// tangential force (Equation 12)
+		float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
+		float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
+
+		return repulsiveForce + dampingForce + tangentialForce;
+	}
+	return float3(0,0,0);
+}
+
+float3 _collisionReactionWithGround(int i_id) {
+
+	float3 groundParticlePosition = particlePositions[i_id];
+	groundParticlePosition.y = -particleDiameter*0.5;
+
+
+	float3 relativePosition = groundParticlePosition - particlePositions[i_id]; // position of j relative to i
+	float relativePositionMagnitude = length(relativePosition);
+
+	if (relativePositionMagnitude < particleDiameter)
+	{
+		float3 relativePositionNormalized = relativePosition / relativePositionMagnitude;
+
+		// repulsive force (Equation 10)
+		float3 repulsiveForce = -springCoefficient * (particleDiameter - relativePositionMagnitude) * relativePositionNormalized;
+		// damping force (Equation 11)
+		// https://www2.msm.ctw.utwente.nl/sluding/PAPERS/luding_alert2008.pdf 
+		// says that the damping force acts along the normal....
+		// not sure whether relativeVelocity is relative to particle i's position or particle i's velocity
+		// using velocity here
+		float3 relativeVelocity = float3(0.0f,0.0f,0.0f) - particleVelocities[i_id]; // not sure if correct
+		//relativeVelocity = relativePositionNormalized * dot(relativeVelocity, relativePositionNormalized);
+		float3 dampingForce = dampingCoefficient * relativeVelocity;
+
+		// tangential force (Equation 12)
+		float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
+		float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
+
+		return repulsiveForce + dampingForce + tangentialForce;
+
+	}
+
+	return float3(0.0f,0.0f,0.0f);
+}
+
+// Returns the grid location for particle p
+int3 _gridIndexThree(int p_id) {
+	return (particlePositions[p_id] - gridStartPosition) / particleDiameter;
+}
+
+// Converts a grid location to a grid index
+int _gridIndexFromThree(int x, int y, int z) {
+	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
+}
+
+// checks cell x,y,z for collision with i, calls _collisionreaction if so
+float3 _checkGridCell(int i, int x, int y, int z) {
+	float3 force = float3(0,0,0);
+	if (x > -1 && y > -1 && z > -1 && x < gridDimensions.x && y < gridDimensions.y && z < gridDimensions.z) {
+		int g_index = _gridIndexFromThree(x,y,z);
+		if (g_index < gridMax) {
+			int j = voxelCollisionGrid[g_index].x;
+			if (j > -1 && j != i)
+				force += _collisionReaction(j, i);
+
+			j = voxelCollisionGrid[g_index].y;
+			if (j > -1 && j != i)
+				force +=_collisionReaction(j, i);
+
+			j = voxelCollisionGrid[g_index].z;
+			if (j > -1 && j != i)
+				force += _collisionReaction(j, i);
+			
+			j = voxelCollisionGrid[g_index].w;
+			if (j > -1  && j != i)
+				force += _collisionReaction(j, i);
+		}
+	}
+	return force;
+}
+
+float gravityCoefficient;
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void CollisionDetection (uint3 id : SV_DispatchThreadID)
+{
+	int i = id.x;
+	int3 i_gridLocation = _gridIndexThree(i);
+	float3 force = float3(0,0,0);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y, 		i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y, 		i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y, 		i_gridLocation.z-1);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y+1, 	i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y+1, 	i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y+1, 	i_gridLocation.z-1);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y-1, 	i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y-1, 	i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y-1, 	i_gridLocation.z-1);
+
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y, 		i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y, 		i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y, 		i_gridLocation.z-1);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y+1, 	i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y+1, 	i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y+1, 	i_gridLocation.z-1);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y-1, 	i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y-1, 	i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x-1, 	i_gridLocation.y-1, 	i_gridLocation.z-1);
+
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y, 		i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y, 		i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y, 		i_gridLocation.z-1);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y+1, 	i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y+1, 	i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y+1, 	i_gridLocation.z-1);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y-1, 	i_gridLocation.z);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y-1, 	i_gridLocation.z+1);
+	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y-1, 	i_gridLocation.z-1);
+	
+	force.y -= gravityCoefficient;
+	force += _collisionReactionWithGround(i);
+
+	particleForces[i] = force;
+}
+
+////////////////////////////
+// Computation Of Momenta //
+////////////////////////////
+// Per RigidBdy
+// Use particleForces to compute the force and angular force on the rigid body
+// Input
+// RWStructuredBuffer<float3> particleForces; (defined in Collision Detection)
+// RWStructuredBuffer<float3> particleRelativePositions; (defined in Computation of Particle Values)
+
+float frictionCoefficient;
+float angularFrictionCoefficient;
+float angularForceScalar;
+float linearForceScalar;
+// Output
+//RWStructuredBuffer<float3> rigidBodyAngularVelocities; // defined in Computation Of Particle Values
+//RWStructuredBuffer<float3> rigidBodyVelocities; // defined in Computation Of Particle Values
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void ComputeMomenta (uint3 id : SV_DispatchThreadID)
+{
+	float3 relativePosition 	= float3(0,0,0);
+	float3 linearForce 			= float3(0,0,0);
+	float3 angularForce 		= float3(0,0,0);
+
+	for (int i = 0; i < particlesPerRigidBody; i++) 
+	{
+		int p_id 					= id.x * particlesPerRigidBody + i;
+		relativePosition 			= particleRelativePositions[p_id];
+		linearForce 				+= particleForces[p_id];
+		angularForce 				+= cross(relativePosition, particleForces[p_id]);	
+	}
+	float threshold = 1.0 / pow(10.0,6);
+
+	float cubeMass = particleMass * particlesPerRigidBody;
+	rigidBodyVelocities[id.x] /= 1.0 + deltaTime*frictionCoefficient;
+	rigidBodyVelocities[id.x] += linearForceScalar * deltaTime * linearForce/cubeMass;
+	if (length(rigidBodyVelocities[id.x]) < threshold) {
+		rigidBodyVelocities[id.x] = float3(0.0,0.0,0.0);
+	}
+
+	// old rotation
+	//float3x3 rotationMatrix = quaternion_to_matrix3x3(rigidBodyQuaternions[id.x]);
+	//float3x3 inverseInertialMatrix = mul(rotationMatrix, mul(inverseInertialTensor, transpose(rotationMatrix)));
+	//rigidBodyAngularVelocities[id.x] += deltaTime * mul(inverseInertialMatrix, angularForce); // probably wrong
+	
+	// new rotation
+	rigidBodyAngularVelocities[id.x] /= 1.0 + deltaTime*angularFrictionCoefficient;
+	rigidBodyAngularVelocities[id.x] += angularForceScalar * deltaTime * angularForce; // probably wrong
+	if (length(rigidBodyAngularVelocities[id.x]) < threshold) {
+		rigidBodyAngularVelocities[id.x] = float3(0.0,0.0,0.0);
+	}
+}
+
+/////////////////////////////
+// Computation Of Position //
+/////////////////////////////
+// Per RigidBody
+// Use rigidBodyForce and rigidBodyTorque to compute the rigid body position and rotation.
+// Input
+
+// RWStructuredBuffer<float3> rigidBodyForce defined in (Computation Of Momenta)
+// RWStructuredBuffer<float3> rigidBodyTorque defined in (Computation Of Momenta)
+// Output
+// RWStructuredBuffer<float3> rigidBodyPosition; // defined in Computation Of Particle Values
+// RWStructuredBuffer<float3> rigidBodyQuaternions;
+ RWStructuredBuffer<float3x3> inverseInertialMatrices;
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
+{
+	// integrate position
+		rigidBodyPositions[id.x] 		= rigidBodyPositions[id.x] + rigidBodyVelocities[id.x] * deltaTime;
+
+	// integration of angular velocity taken from
+	// "Essential Mathematics for Games and Interactive Applications"
+	// by James Van Verth and Lars Bishop
+
+	// attempt #1 to apply the inverse inertial tensor....
+	// float3x3 rotationMatrix = quaternion_to_matrix3x3(rigidBodyQuaternions[id.x]);
+	// float3x3 inverseInertialMatrix = mul(rotationMatrix, mul(inverseInertialTensor, transpose(rotationMatrix)));
+	// inverseInertialMatrices[id.x] = inverseInertialMatrix;
+	// float3 rigidBodyAngularVelocity = mul(inverseInertialMatrix, rigidBodyAngularVelocities[id.x]);
+	
+
+	// attempt #2 to apply the inverse inertial tensor....
+	// float3x3 rotationMatrix = quaternion_to_matrix3x3(rigidBodyQuaternions[id.x]);
+	// float3x3 inverseInertialMatrix = mul(rotationMatrix, mul(inverseInertialTensor, transpose(rotationMatrix)));
+	// inverseInertialMatrices[id.x] = inverseInertialMatrix;
+	// float3 rigidBodyAngularVelocity = mul(inverseInertialTensor, rigidBodyAngularVelocities[id.x]);
+	// old rotation
+	float3 rigidBodyAngularVelocity = rigidBodyAngularVelocities[id.x];
+	
+
+
+
+	// old
+	//float4 omega = float4(0, rigidBodyAngularVelocities[id.x]);
+	// new
+	float4 omega = float4(rigidBodyAngularVelocity, 0);
+	
+	float4 q = rigidBodyQuaternions[id.x];
+	rigidBodyQuaternions[id.x] = normalize(q + deltaTime * (0.5*quat_concat(omega, q)));
+}
+
+RWStructuredBuffer<float3> 	previousRigidBodyPositions;
+RWStructuredBuffer<float4> 	previousRigidBodyQuaternions;
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void SavePreviousPositionAndRotation (uint3 id : SV_DispatchThreadID)
+{
+	previousRigidBodyPositions[id.x] = rigidBodyPositions[id.x];
+	previousRigidBodyQuaternions[id.x] = rigidBodyQuaternions[id.x];
+}

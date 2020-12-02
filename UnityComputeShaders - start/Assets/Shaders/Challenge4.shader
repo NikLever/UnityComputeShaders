@@ -62,7 +62,10 @@
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 if (v.vertex.z<-0.2){
-                    v.vertex.x += (sin(abs(v.vertex.z+0.2)*5*UNITY_HALF_PI + 3*UNITY_HALF_PI) + 1) * 0.3 * _FinOffset;
+                    //If v.vertex.z is less than -0.2 then this is a tail vertex
+                    //The sin curve between 3π/2 and 2π ramps up from -1 to 0
+                    //Use this curve plus 1, ie a curve from 0 to 1 to control the strength of the swish  
+                    //Apply the value you calculate as an offset to v.vertex.x 
                 }
                 v.vertex = mul(_Matrix, v.vertex);
             #endif
@@ -71,7 +74,9 @@
         void setup()
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                _FinOffset = sin(boidsBuffer[unity_InstanceID].theta);
+                //Convert the boid theta value to a value between -1 and 1
+                //Hint: use sin and save the value as _FinOffset
+                _FinOffset = 0;
                 _Matrix = create_matrix(boidsBuffer[unity_InstanceID].position, boidsBuffer[unity_InstanceID].direction, float3(0.0, 1.0, 0.0));
             #endif
         }
