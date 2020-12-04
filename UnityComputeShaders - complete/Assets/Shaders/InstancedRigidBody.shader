@@ -31,8 +31,17 @@
         float4x4 _Matrix;
         
          #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-            StructuredBuffer<float3> positions;
-			StructuredBuffer<float4> quaternions; 
+            struct RigidBody
+            {
+	            float3 position;
+	            float4 quaternion;
+	            float3 velocity;
+	            float3 angularVelocity;
+	            int particleIndex;
+	            int particleCount;
+            };
+
+            StructuredBuffer<RigidBody> rigidBodiesBuffer; 
          #endif
         
         float4x4 quaternion_to_matrix(float4 quat)
@@ -86,7 +95,8 @@
         void setup()
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                _Matrix = create_matrix(positions[unity_InstanceID], quaternions[unity_InstanceID]);
+                RigidBody body = rigidBodiesBuffer[unity_InstanceID];
+                _Matrix = create_matrix(body.position, body.quaternion);
             #endif
         }
  

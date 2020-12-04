@@ -256,44 +256,18 @@ MonoBehaviour:
   m_cubeMass: 0.5
   scale: 1
   particlesPerEdge: 4
-  springCoefficient: 5
+  springCoefficient: 3
   dampingCoefficient: 0.01
   tangentialCoefficient: 0.01
-  gravityCoefficient: 0.006
+  gravityCoefficient: 0.003
   frictionCoefficient: 0.1
   angularFrictionCoefficient: 0.1
-  angularForceScalar: 60
-  linearForceScalar: 60
-  x: 6
-  y: 6
-  z: 6
-  debug_particle_id_count: 4
-  gridX: 10
-  gridY: 10
-  gridZ: 10
+  angularForceScalar: 100
+  linearForceScalar: 100
+  gridSize: {x: 10, y: 10, z: 10}
+  gridStartPosition: {x: -3, y: 0, z: -3}
   rigidBodyCount: 100
-  dt: 0.004166667
-  tick_rate: 240
-  m_firstCubeLocation: {x: 0, y: 2, z: 0}
-  m_firstCubeVelocity: {x: 0, y: 0, z: 0}
-  m_firstCubeRotation: {x: 0, y: 23, z: 0}
-  m_debugRender: 0
-  positionArray: []
-  quaternionArray: []
-  particleForcesArray: []
-  particleVelocities: []
-  rigidBodyVelocitiesArray: []
-  particlePositions: []
-  particleRelativePositions: []
-  particleInitialRelativePositions: []
-  rigidBodyInertialTensorsArray: []
-  voxelGridArray: 
-  particleVoxelPositionsArray: 
-  debugParticleIds: 
-  m_rigidBodyQuaternion: {x: 0, y: 0, z: 0, w: 0}
-  m_comparisonQuaternion: {x: 0, y: 0, z: 0, w: 0}
-  gridStartPosition: {x: 0, y: 0, z: 0}
-  m_maximumVelocity: 0
+  tick_rate: 300
 --- !u!4 &411714672
 Transform:
   m_ObjectHideFlags: 0
