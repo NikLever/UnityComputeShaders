@@ -99,7 +99,7 @@ public class GPUPhysics : MonoBehaviour {
 	ComputeBuffer particlesBuffer;
 
 	int[] voxelGridArray;
-	int[] particleVoxelPositionsArray;
+	//int[] particleVoxelPositionsArray;
 
 	private int kernelGenerateParticleValues;
 	private int kernelClearGrid;
@@ -141,10 +141,8 @@ public class GPUPhysics : MonoBehaviour {
 
 		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 4];
 
-		
 		Debug.Log("nparticles: " + rigidBodyCount * particlesPerBody);
-		// initialize constants
-
+		
 		InitInstancing();
 		
 	}
@@ -201,7 +199,7 @@ public class GPUPhysics : MonoBehaviour {
 			}
 		}
 
-		particleVoxelPositionsArray = new int[count * 3];
+		//particleVoxelPositionsArray = new int[count * 3];
 	}
 
 	void InitBuffers()
