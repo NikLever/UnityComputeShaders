@@ -16,7 +16,7 @@ public class GPUPhysics : MonoBehaviour {
 		public RigidBody(Vector3 pos, int pIndex, int pCount)
         {
 			position = pos;
-			quaternion = Quaternion.identity;
+			quaternion = Random.rotation;//Quaternion.identity;
 			velocity = angularVelocity = Vector3.zero;
 			particleIndex = pIndex;
 			particleCount = pCount;
