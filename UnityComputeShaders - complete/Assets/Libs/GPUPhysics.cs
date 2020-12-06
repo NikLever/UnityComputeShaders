@@ -97,8 +97,8 @@ public class GPUPhysics : MonoBehaviour {
 	ComputeBuffer rigidBodiesBuffer;
 	ComputeBuffer particlesBuffer;
 	private ComputeBuffer argsBuffer;
-	private ComputeBuffer m_bufferWithSphereArgs;
-	private ComputeBuffer m_bufferWithLineArgs;
+	private ComputeBuffer argsSphereBuffer;
+	private ComputeBuffer argsLineBuffer;
 	private ComputeBuffer voxelGridBuffer;                 // int4
 	
 	private int kernelGenerateParticleValues;
@@ -109,9 +109,9 @@ public class GPUPhysics : MonoBehaviour {
 	private int kernelComputePositionAndRotation;
 	private int kernelCollisionDetection;
 
-	private int m_threadGroupsPerRigidBody;
-	private int m_threadGroupsPerParticle;
-	private int m_threadGroupsPerGridCell;
+	private int groupsPerRigidBody;
+	private int groupsPerParticle;
+	private int groupsPerGridCell;
 	private int deltaTimeID;
 
 	private int frameCounter;
@@ -243,9 +243,9 @@ public class GPUPhysics : MonoBehaviour {
 		kernelComputePositionAndRotation = shader.FindKernel("ComputePositionAndRotation");
 
 		// Count Thread Groups
-		m_threadGroupsPerRigidBody = Mathf.CeilToInt(rigidBodyCount / 8.0f);
-		m_threadGroupsPerParticle = Mathf.CeilToInt(particleCount / 8f);
-		m_threadGroupsPerGridCell = Mathf.CeilToInt((gridSize.x * gridSize.y * gridSize.z) / 8f);
+		groupsPerRigidBody = Mathf.CeilToInt(rigidBodyCount / 8.0f);
+		groupsPerParticle = Mathf.CeilToInt(particleCount / 8f);
+		groupsPerGridCell = Mathf.CeilToInt((gridSize.x * gridSize.y * gridSize.z) / 8f);
 
 		// Bind buffers
 
@@ -285,12 +285,12 @@ public class GPUPhysics : MonoBehaviour {
 			int numOfParticles = rigidBodyCount * particlesPerBody;
 
 			uint[] sphereArgs = new uint[] { sphereMesh.GetIndexCount(0), (uint)numOfParticles, 0, 0, 0 };
-			m_bufferWithSphereArgs = new ComputeBuffer(1, sphereArgs.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-			m_bufferWithSphereArgs.SetData(sphereArgs);
+			argsSphereBuffer = new ComputeBuffer(1, sphereArgs.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+			argsSphereBuffer.SetData(sphereArgs);
 
 			uint[] lineArgs = new uint[] { lineMesh.GetIndexCount(0), (uint)numOfParticles, 0, 0, 0 };
-			m_bufferWithLineArgs = new ComputeBuffer(1, lineArgs.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-			m_bufferWithLineArgs.SetData(lineArgs);
+			argsLineBuffer = new ComputeBuffer(1, lineArgs.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+			argsLineBuffer.SetData(lineArgs);
 
 			sphereMaterial.SetBuffer("particlesBuffer", particlesBuffer);
 			sphereMaterial.SetVector("scale", new Vector4(particleDiameter * 0.5f, particleDiameter * 0.5f, particleDiameter * 0.5f, 1.0f));
@@ -308,17 +308,17 @@ public class GPUPhysics : MonoBehaviour {
 		shader.SetFloat(deltaTimeID, dt);
 
 		for (int i=0; i<stepsPerUpdate; i++) {
-			shader.Dispatch(kernelGenerateParticleValues, m_threadGroupsPerRigidBody, 1, 1);
-			shader.Dispatch(kernelClearGrid, m_threadGroupsPerGridCell, 1, 1);
-			shader.Dispatch(kernelPopulateGrid, m_threadGroupsPerParticle, 1, 1);
-			shader.Dispatch(kernelCollisionDetection, m_threadGroupsPerParticle, 1, 1);
-			shader.Dispatch(kernelComputeMomenta, m_threadGroupsPerRigidBody, 1, 1);
-			shader.Dispatch(kernelComputePositionAndRotation, m_threadGroupsPerRigidBody, 1, 1);
+			shader.Dispatch(kernelGenerateParticleValues, groupsPerRigidBody, 1, 1);
+			shader.Dispatch(kernelClearGrid, groupsPerGridCell, 1, 1);
+			shader.Dispatch(kernelPopulateGrid, groupsPerParticle, 1, 1);
+			shader.Dispatch(kernelCollisionDetection, groupsPerParticle, 1, 1);
+			shader.Dispatch(kernelComputeMomenta, groupsPerRigidBody, 1, 1);
+			shader.Dispatch(kernelComputePositionAndRotation, groupsPerRigidBody, 1, 1);
 		}
 
 		if (debugWireframe) {
-			Graphics.DrawMeshInstancedIndirect(sphereMesh, 0, sphereMaterial, bounds, m_bufferWithSphereArgs);
-			Graphics.DrawMeshInstancedIndirect(lineMesh, 0, lineMaterial, bounds, m_bufferWithLineArgs);
+			Graphics.DrawMeshInstancedIndirect(sphereMesh, 0, sphereMaterial, bounds, argsSphereBuffer);
+			Graphics.DrawMeshInstancedIndirect(lineMesh, 0, lineMaterial, bounds, argsLineBuffer);
 		}
         else
         {
@@ -332,11 +332,11 @@ public class GPUPhysics : MonoBehaviour {
 
 		voxelGridBuffer.Release();
 		
-		if (m_bufferWithSphereArgs != null) {
-			m_bufferWithSphereArgs.Release();
+		if (argsSphereBuffer != null) {
+			argsSphereBuffer.Release();
 		}
-		if (m_bufferWithLineArgs != null) {
-			m_bufferWithLineArgs.Release();
+		if (argsLineBuffer != null) {
+			argsLineBuffer.Release();
 		}
 		if (argsBuffer != null) {
 			argsBuffer.Release();
