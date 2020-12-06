@@ -148,10 +148,19 @@ void ClearGrid (uint3 id : SV_DispatchThreadID)
 }
 
 // Returns the grid index for particle p
-// equivalent to _gridIndexFromThree(_gridIndexThree(p_id))
 int GetParticleGridIndex(int id) {
 	int3 gridLocation = (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
 	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
+}
+
+// Returns the grid location for particle p
+int3 GetParticleGridLocation(int id) {
+	return (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
+}
+
+// Converts a grid location to a grid index
+int GetParticleGridIndex(int x, int y, int z) {
+	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
 }
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
@@ -159,7 +168,7 @@ void PopulateGrid (uint3 id : SV_DispatchThreadID)
 {
 	int p_id = id.x;
 	int gridIndex = GetParticleGridIndex(p_id);
-	// clamp gridIndex?
+	// clamp gridIndex
 	if (gridIndex < gridMax && gridIndex > -1)
 	{
 		int originalValue = 0;
@@ -186,7 +195,7 @@ float dampingCoefficient;
 float tangentialCoefficient;
 // Output
 //RWStructuredBuffer<float3> particleForces;
-float3 _collisionReaction(int j_id, int i_id)
+float3 CollisionReaction(int j_id, int i_id)
 {
 	// the force on particle i after colliding with particle j is modelled as follows
 
@@ -220,7 +229,7 @@ float3 _collisionReaction(int j_id, int i_id)
 	return float3(0,0,0);
 }
 
-float3 _collisionReactionWithGround(int id) {
+float3 CollisionReactionWithGround(int id) {
 	Particle particle = particlesBuffer[id];
 
 	float3 groundParticlePosition = particle.position;
@@ -256,37 +265,27 @@ float3 _collisionReactionWithGround(int id) {
 	return float3(0.0f,0.0f,0.0f);
 }
 
-// Returns the grid location for particle p
-int3 _gridIndexThree(int id) {
-	return (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
-}
-
-// Converts a grid location to a grid index
-int _gridIndexFromThree(int x, int y, int z) {
-	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
-}
-
-// checks cell x,y,z for collision with i, calls _collisionreaction if so
+// checks cell x,y,z for collision with i, calls CollisionReaction if so
 float3 _checkGridCell(int i, int x, int y, int z) {
 	float3 force = float3(0,0,0);
 	if (x > -1 && y > -1 && z > -1 && x < gridDimensions.x && y < gridDimensions.y && z < gridDimensions.z) {
-		int g_index = _gridIndexFromThree(x,y,z);
+		int g_index = GetParticleGridIndex(x,y,z);
 		if (g_index < gridMax) {
 			int j = voxelGridBuffer[g_index].x;
 			if (j > -1 && j != i)
-				force += _collisionReaction(j, i);
+				force += CollisionReaction(j, i);
 
 			j = voxelGridBuffer[g_index].y;
 			if (j > -1 && j != i)
-				force +=_collisionReaction(j, i);
+				force += CollisionReaction(j, i);
 
 			j = voxelGridBuffer[g_index].z;
 			if (j > -1 && j != i)
-				force += _collisionReaction(j, i);
+				force += CollisionReaction(j, i);
 			
 			j = voxelGridBuffer[g_index].w;
 			if (j > -1  && j != i)
-				force += _collisionReaction(j, i);
+				force += CollisionReaction(j, i);
 		}
 	}
 	return force;
@@ -297,7 +296,7 @@ float gravityCoefficient;
 void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
 {
 	int i = id.x;
-	int3 i_gridLocation = _gridIndexThree(i);
+	int3 i_gridLocation = GetParticleGridLocation(i);
 	float3 force = float3(0,0,0);
 	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y, 		i_gridLocation.z);
 	force += _checkGridCell(i, i_gridLocation.x, 	i_gridLocation.y, 		i_gridLocation.z+1);
@@ -330,7 +329,7 @@ void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
 	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y-1, 	i_gridLocation.z-1);
 	
 	force.y -= gravityCoefficient;
-	force += _collisionReactionWithGround(i);
+	force += CollisionReactionWithGround(i);
 
 	particlesBuffer[i].force = force;
 }
@@ -339,11 +338,11 @@ void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
 void CollisionDetection (uint3 id : SV_DispatchThreadID)
 {
 	int i = id.x;
-	int3 i_gridLocation = _gridIndexThree(i);
+	int3 i_gridLocation = GetParticleGridLocation(i);
 	float3 force = 0;
 	
 	force.y -= gravityCoefficient;
-	force += _collisionReactionWithGround(i);
+	force += CollisionReactionWithGround(i);
 
 	particlesBuffer[i].force = force;
 }
