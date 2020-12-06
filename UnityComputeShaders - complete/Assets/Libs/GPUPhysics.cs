@@ -42,13 +42,12 @@ public class GPUPhysics : MonoBehaviour {
 
 	int SIZE_PARTICLE = 15 * sizeof(float);
 
-	public bool m_debugWireframe;
-	private bool m_lastDebugWireframe;
+	public bool debugWireframe;
+
 	// set from editor
-	public ComputeShader shader;
 	public Mesh cubeMesh {
 		get {
-			return m_debugWireframe ? CjLib.PrimitiveMeshFactory.BoxWireframe() : CjLib.PrimitiveMeshFactory.BoxFlatShaded();
+			return debugWireframe ? CjLib.PrimitiveMeshFactory.BoxWireframe() : CjLib.PrimitiveMeshFactory.BoxFlatShaded();
 		}
 	}
 	public Mesh sphereMesh {
@@ -62,8 +61,7 @@ public class GPUPhysics : MonoBehaviour {
 		}
 	}
 
-	Rigidbody[] comparisonCubes;
-
+	public ComputeShader shader;
 	public Material cubeMaterial;
 	public Material sphereMaterial;
 	public Material lineMaterial;
@@ -81,42 +79,40 @@ public class GPUPhysics : MonoBehaviour {
 	public float linearForceScalar;
 	public Vector3Int gridSize = new Vector3Int(5, 5, 5);
 	public Vector3 gridStartPosition;
+	public bool useGrid = true;
 	public int rigidBodyCount = 1000;
-	public float tick_rate;
-	private float ticker;
-
+	[Range(1, 20)]
+	public int stepsPerUpdate = 10;
 	
 	// calculated
 	private Vector3 m_cubeScale;
-	
 	
 	int particlesPerBody;
 	float particleDiameter;
 
 	RigidBody[] rigidBodiesArray;
 	Particle[] particlesArray;
+	int[] voxelGridArray;
+
 	ComputeBuffer rigidBodiesBuffer;
 	ComputeBuffer particlesBuffer;
-
-	int[] voxelGridArray;
-	//int[] particleVoxelPositionsArray;
-
+	private ComputeBuffer argsBuffer;
+	private ComputeBuffer m_bufferWithSphereArgs;
+	private ComputeBuffer m_bufferWithLineArgs;
+	private ComputeBuffer voxelGridBuffer;                 // int4
+	
 	private int kernelGenerateParticleValues;
 	private int kernelClearGrid;
 	private int kernelPopulateGrid;
-	private int kernelCollisionDetection;
+	private int kernelCollisionDetectionWithGrid;
 	private int kernelComputeMomenta;
 	private int kernelComputePositionAndRotation;
-	
+	private int kernelCollisionDetection;
+
 	private int m_threadGroupsPerRigidBody;
 	private int m_threadGroupsPerParticle;
 	private int m_threadGroupsPerGridCell;
 	private int deltaTimeID;
-
-	private ComputeBuffer m_bufferWithArgs;
-	private ComputeBuffer m_bufferWithSphereArgs;
-	private ComputeBuffer m_bufferWithLineArgs;
-	private ComputeBuffer m_voxelCollisionGrid;                 // int4
 
 	private int frameCounter;
 
@@ -155,13 +151,14 @@ public class GPUPhysics : MonoBehaviour {
 
 	void InitRigidBodies()
     {
-		Vector3 spawnPosition = new Vector3(0, 10, 0);
+		Vector3 spawnPosition = new Vector3(0, 5, 0);
 
 		int pIndex = 0;
 
 		for(int i=0; i<rigidBodyCount; i++)
         {
-			Vector3 pos = spawnPosition + Random.insideUnitSphere * 10.0f;
+			Vector3 pos = spawnPosition;// + Random.insideUnitSphere * 10.0f;
+			pos.y += i * 2;
 			rigidBodiesArray[i] = new RigidBody(pos, pIndex, particlesPerBody);
 			pIndex += particlesPerBody;
 		}
@@ -213,7 +210,7 @@ public class GPUPhysics : MonoBehaviour {
 		particlesBuffer.SetData(particlesArray);
 
 		int numGridCells = gridSize.x * gridSize.y * gridSize.z;
-		m_voxelCollisionGrid = new ComputeBuffer(numGridCells, 4 * sizeof(int));
+		voxelGridBuffer = new ComputeBuffer(numGridCells, 4 * sizeof(int));
 	}
 
 	void InitShader()
@@ -257,15 +254,15 @@ public class GPUPhysics : MonoBehaviour {
 		shader.SetBuffer(kernelGenerateParticleValues, "particlesBuffer", particlesBuffer);
 		
 		// kernel 1 ClearGrid
-		shader.SetBuffer(kernelClearGrid, "voxelCollisionGrid", m_voxelCollisionGrid);
+		shader.SetBuffer(kernelClearGrid, "voxelGridBuffer", voxelGridBuffer);
 
 		// kernel 2 Populate Grid
-		shader.SetBuffer(kernelPopulateGrid, "voxelCollisionGrid", m_voxelCollisionGrid);
+		shader.SetBuffer(kernelPopulateGrid, "voxelGridBuffer", voxelGridBuffer);
 		shader.SetBuffer(kernelPopulateGrid, "particlesBuffer", particlesBuffer);
 		
 		// kernel 3 Collision Detection
 		shader.SetBuffer(kernelCollisionDetection, "particlesBuffer", particlesBuffer);
-		shader.SetBuffer(kernelCollisionDetection, "voxelCollisionGrid", m_voxelCollisionGrid);
+		shader.SetBuffer(kernelCollisionDetection, "voxelGridBuffer", voxelGridBuffer);
 		
 		// kernel 4 Computation of Momenta
 		shader.SetBuffer(kernelComputeMomenta, "rigidBodiesBuffer", rigidBodiesBuffer);
@@ -278,8 +275,12 @@ public class GPUPhysics : MonoBehaviour {
 	void InitInstancing() {
 		// Setup Indirect Renderer
 		cubeMaterial.SetBuffer("rigidBodiesBuffer", rigidBodiesBuffer);
+
+		uint[] args = new uint[] { cubeMesh.GetIndexCount(0), (uint)rigidBodyCount, 0, 0, 0 };
+		argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+		argsBuffer.SetData(args);
 		
-		if (m_debugWireframe)
+		if (debugWireframe)
 		{
 			int numOfParticles = rigidBodyCount * particlesPerBody;
 
@@ -298,49 +299,15 @@ public class GPUPhysics : MonoBehaviour {
 		}
 	}
 
-	void WireframeRender()
-    {
-		/*shader.SetFloat("particleDiameter", scale / particlesPerEdge);
-		shader.SetFloat("springCoefficient", springCoefficient);
-		shader.SetFloat("dampingCoefficient", dampingCoefficient);
-		shader.SetFloat("frictionCoefficient", frictionCoefficient);
-		shader.SetFloat("angularFrictionCoefficient", angularFrictionCoefficient);
-		shader.SetFloat("gravityCoefficient", gravityCoefficient);
-		shader.SetFloat("tangentialCoefficient", tangentialCoefficient);
-		shader.SetFloat("angularForceScalar", angularForceScalar);
-		shader.SetFloat("linearForceScalar", linearForceScalar);
-		int particlesPerBody = 8;
-		shader.SetFloat("particleMass", m_cubeMass / particlesPerBody);*/
-
-		Graphics.DrawMeshInstancedIndirect(sphereMesh, 0, sphereMaterial, m_bounds, m_bufferWithSphereArgs);
-		Graphics.DrawMeshInstancedIndirect(lineMesh, 0, lineMaterial, m_bounds, m_bufferWithLineArgs);
-	}
-
 	void Update() {
-		
-		if (m_bufferWithArgs == null || m_debugWireframe != m_lastDebugWireframe) {
-			uint indexCountPerInstance = cubeMesh.GetIndexCount(0);
-			uint instanceCount = (uint)rigidBodyCount;
-			uint startIndexLocation = 0;
-			uint baseVertexLocation = 0;
-			uint startInstanceLocation = 0;
-			uint[] args = new uint[] { indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation };
-			m_bufferWithArgs = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-			m_bufferWithArgs.SetData(args);
-			m_lastDebugWireframe = m_debugWireframe;
-		}
 		if (frameCounter++ < 10) {
 			return;
 		}
 
-		ticker += Time.deltaTime;
-		float _dt = 1.0f / tick_rate;
+		float dt = Time.deltaTime/stepsPerUpdate;
+		shader.SetFloat(deltaTimeID, dt);
 
-		while (ticker >= _dt) {
-			ticker -= _dt;
-
-			shader.SetFloat(deltaTimeID, _dt);
-
+		for (int i=0; i<stepsPerUpdate; i++) {
 			shader.Dispatch(kernelGenerateParticleValues, m_threadGroupsPerRigidBody, 1, 1);
 			shader.Dispatch(kernelClearGrid, m_threadGroupsPerGridCell, 1, 1);
 			shader.Dispatch(kernelPopulateGrid, m_threadGroupsPerParticle, 1, 1);
@@ -349,12 +316,13 @@ public class GPUPhysics : MonoBehaviour {
 			shader.Dispatch(kernelComputePositionAndRotation, m_threadGroupsPerRigidBody, 1, 1);
 		}
 
-		if (m_debugWireframe) {
-			WireframeRender();
-        }
+		if (debugWireframe) {
+			Graphics.DrawMeshInstancedIndirect(sphereMesh, 0, sphereMaterial, m_bounds, m_bufferWithSphereArgs);
+			Graphics.DrawMeshInstancedIndirect(lineMesh, 0, lineMaterial, m_bounds, m_bufferWithLineArgs);
+		}
         else
         {
-            Graphics.DrawMeshInstancedIndirect(cubeMesh, 0, cubeMaterial, m_bounds, m_bufferWithArgs);
+            Graphics.DrawMeshInstancedIndirect(cubeMesh, 0, cubeMaterial, m_bounds, argsBuffer);
 		}
 	}
 
@@ -362,7 +330,7 @@ public class GPUPhysics : MonoBehaviour {
 		rigidBodiesBuffer.Release();
 		particlesBuffer.Release();
 
-		m_voxelCollisionGrid.Release();
+		voxelGridBuffer.Release();
 		
 		if (m_bufferWithSphereArgs != null) {
 			m_bufferWithSphereArgs.Release();
@@ -370,8 +338,8 @@ public class GPUPhysics : MonoBehaviour {
 		if (m_bufferWithLineArgs != null) {
 			m_bufferWithLineArgs.Release();
 		}
-		if (m_bufferWithArgs != null) {
-			m_bufferWithArgs.Release();
+		if (argsBuffer != null) {
+			argsBuffer.Release();
 		}
 	}
 }

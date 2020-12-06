@@ -16,7 +16,7 @@
 #pragma kernel PopulateGrid
 
 // Per Particle		3
-#pragma kernel CollisionDetection
+#pragma kernel CollisionDetectionWithGrid
 
 // Per Rigid Body	4
 #pragma kernel ComputeMomenta
@@ -24,9 +24,12 @@
 // Per Rigid Body	5
 #pragma kernel ComputePositionAndRotation
 
+// Per Particle		6
+#pragma kernel CollisionDetection
+
 
 // Buffers
-// voxelCollisionGrid				(RWStructuredBuffer<int4>)
+// voxelGridBuffer				(RWStructuredBuffer<int4>)
 
 
 // Constants
@@ -115,7 +118,7 @@ void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
 // Per Grid Cell
 // Use particlePositions
 // to populate the
-// voxelCollisionGrid
+// voxelGridBuffer
 // Input
 // StructuredBuffer<float3> particlePositions; (defined above)
 int3 gridDimensions;
@@ -123,16 +126,16 @@ float3 gridStartPosition;
 int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
 float particleDiameter;
 // Output
-RWStructuredBuffer<int4> voxelCollisionGrid;
+RWStructuredBuffer<int4> voxelGridBuffer;
 // DEBUG ONLY
 //RWStructuredBuffer<int3> debugParticleVoxelPositions;
 [numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
 void ClearGrid (uint3 id : SV_DispatchThreadID)
 {
-	voxelCollisionGrid[id.x].r = -1;
-	voxelCollisionGrid[id.x].g = -1;
-	voxelCollisionGrid[id.x].b = -1;
-	voxelCollisionGrid[id.x].a = -1;
+	voxelGridBuffer[id.x].r = -1;
+	voxelGridBuffer[id.x].g = -1;
+	voxelGridBuffer[id.x].b = -1;
+	voxelGridBuffer[id.x].a = -1;
 }
 
 // Returns the grid index for particle p
@@ -154,13 +157,13 @@ void PopulateGrid (uint3 id : SV_DispatchThreadID)
 	if (gridIndex < gridMax && gridIndex > -1)
 	{
 		int originalValue = 0;
-		InterlockedCompareExchange(voxelCollisionGrid[gridIndex].x, -1, p_id, originalValue);
+		InterlockedCompareExchange(voxelGridBuffer[gridIndex].x, -1, p_id, originalValue);
 		if (originalValue != -1)
-			InterlockedCompareExchange(voxelCollisionGrid[gridIndex].y, -1, p_id, originalValue);
+			InterlockedCompareExchange(voxelGridBuffer[gridIndex].y, -1, p_id, originalValue);
 		if (originalValue != -1)
-			InterlockedCompareExchange(voxelCollisionGrid[gridIndex].z, -1, p_id, originalValue);
+			InterlockedCompareExchange(voxelGridBuffer[gridIndex].z, -1, p_id, originalValue);
 		if (originalValue != -1)
-			InterlockedCompareExchange(voxelCollisionGrid[gridIndex].w, -1, p_id, originalValue);
+			InterlockedCompareExchange(voxelGridBuffer[gridIndex].w, -1, p_id, originalValue);
 	}
 }
 
@@ -171,7 +174,7 @@ void PopulateGrid (uint3 id : SV_DispatchThreadID)
 // Use particle positions, grid and velocity to compute Particle force
 // Input
 // StructuredBuffer<float3> particlesBuffer;
-// RWStructuredBuffer<int4> voxelCollisionGrid; (defined in Grid Generation)
+// RWStructuredBuffer<int4> voxelGridBuffer; (defined in Grid Generation)
 float springCoefficient;
 float dampingCoefficient;
 float tangentialCoefficient;
@@ -263,19 +266,19 @@ float3 _checkGridCell(int i, int x, int y, int z) {
 	if (x > -1 && y > -1 && z > -1 && x < gridDimensions.x && y < gridDimensions.y && z < gridDimensions.z) {
 		int g_index = _gridIndexFromThree(x,y,z);
 		if (g_index < gridMax) {
-			int j = voxelCollisionGrid[g_index].x;
+			int j = voxelGridBuffer[g_index].x;
 			if (j > -1 && j != i)
 				force += _collisionReaction(j, i);
 
-			j = voxelCollisionGrid[g_index].y;
+			j = voxelGridBuffer[g_index].y;
 			if (j > -1 && j != i)
 				force +=_collisionReaction(j, i);
 
-			j = voxelCollisionGrid[g_index].z;
+			j = voxelGridBuffer[g_index].z;
 			if (j > -1 && j != i)
 				force += _collisionReaction(j, i);
 			
-			j = voxelCollisionGrid[g_index].w;
+			j = voxelGridBuffer[g_index].w;
 			if (j > -1  && j != i)
 				force += _collisionReaction(j, i);
 		}
@@ -285,7 +288,7 @@ float3 _checkGridCell(int i, int x, int y, int z) {
 
 float gravityCoefficient;
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
-void CollisionDetection (uint3 id : SV_DispatchThreadID)
+void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
 {
 	int i = id.x;
 	int3 i_gridLocation = _gridIndexThree(i);
@@ -319,6 +322,19 @@ void CollisionDetection (uint3 id : SV_DispatchThreadID)
 	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y-1, 	i_gridLocation.z);
 	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y-1, 	i_gridLocation.z+1);
 	force += _checkGridCell(i, i_gridLocation.x+1, 	i_gridLocation.y-1, 	i_gridLocation.z-1);
+	
+	force.y -= gravityCoefficient;
+	force += _collisionReactionWithGround(i);
+
+	particlesBuffer[i].force = force;
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void CollisionDetection (uint3 id : SV_DispatchThreadID)
+{
+	int i = id.x;
+	int3 i_gridLocation = _gridIndexThree(i);
+	float3 force = 0;
 	
 	force.y -= gravityCoefficient;
 	force += _collisionReactionWithGround(i);
