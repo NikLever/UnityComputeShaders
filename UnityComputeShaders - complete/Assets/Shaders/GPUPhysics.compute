@@ -149,11 +149,8 @@ void ClearGrid (uint3 id : SV_DispatchThreadID)
 
 // Returns the grid index for particle p
 // equivalent to _gridIndexFromThree(_gridIndexThree(p_id))
-int _gridIndex(int id) {
+int GetParticleGridIndex(int id) {
 	int3 gridLocation = (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
-	// DEBUG ONLY
-	//debugParticleVoxelPositions[p_id] = gridLocation;
-	//debugParticleVoxelPositions[p_id] = int3(1,2,3);
 	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
 }
 
@@ -161,7 +158,7 @@ int _gridIndex(int id) {
 void PopulateGrid (uint3 id : SV_DispatchThreadID)
 {
 	int p_id = id.x;
-	int gridIndex = _gridIndex(p_id);
+	int gridIndex = GetParticleGridIndex(p_id);
 	// clamp gridIndex?
 	if (gridIndex < gridMax && gridIndex > -1)
 	{

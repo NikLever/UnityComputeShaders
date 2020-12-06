@@ -78,14 +78,14 @@ public class GPUPhysics : MonoBehaviour {
 	public float angularForceScalar;
 	public float linearForceScalar;
 	public Vector3Int gridSize = new Vector3Int(5, 5, 5);
-	public Vector3 gridStartPosition;
+	public Vector3 gridPosition;//centre of grid
 	public bool useGrid = true;
 	public int rigidBodyCount = 1000;
 	[Range(1, 20)]
 	public int stepsPerUpdate = 10;
 	
 	// calculated
-	private Vector3 m_cubeScale;
+	private Vector3 cubeScale;
 	
 	int particlesPerBody;
 	float particleDiameter;
@@ -119,7 +119,7 @@ public class GPUPhysics : MonoBehaviour {
 	void Start() {
 		Application.targetFrameRate = 300;
 
-		m_cubeScale = new Vector3(scale, scale, scale);
+		cubeScale = new Vector3(scale, scale, scale);
 
 		int particlesPerEdgeMinusTwo = particlesPerEdge-2;
 		particlesPerBody = particlesPerEdge * particlesPerEdge * particlesPerEdge - particlesPerEdgeMinusTwo*particlesPerEdgeMinusTwo*particlesPerEdgeMinusTwo;
@@ -134,10 +134,6 @@ public class GPUPhysics : MonoBehaviour {
 		InitBuffers();
 
 		InitShader();
-
-		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 4];
-
-		Debug.Log("nparticles: " + rigidBodyCount * particlesPerBody);
 		
 		InitInstancing();
 		
@@ -147,6 +143,7 @@ public class GPUPhysics : MonoBehaviour {
     {
 		rigidBodiesArray = new RigidBody[rigidBodyCount];
 		particlesArray = new Particle[rigidBodyCount * particlesPerBody];
+		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 4];
 	}
 
 	void InitRigidBodies()
@@ -196,12 +193,11 @@ public class GPUPhysics : MonoBehaviour {
 			}
 		}
 
-		//particleVoxelPositionsArray = new int[count * 3];
+		Debug.Log("particleCount: " + rigidBodyCount * particlesPerBody);
 	}
 
 	void InitBuffers()
     {
-		//int total = rigidBodyCount;
 		rigidBodiesBuffer = new ComputeBuffer(rigidBodyCount, SIZE_RIGIDBODY);
 		rigidBodiesBuffer.SetData(rigidBodiesArray);
 
@@ -231,16 +227,19 @@ public class GPUPhysics : MonoBehaviour {
 		shader.SetFloat("angularForceScalar", angularForceScalar);
 		shader.SetFloat("linearForceScalar", linearForceScalar);
 		shader.SetFloat("particleMass", cubeMass / particlesPerBody);
-		shader.SetFloats("gridStartPosition", new float[] { gridStartPosition.x, gridStartPosition.y, gridStartPosition.z });
+		Vector3 halfSize = new Vector3(gridSize.x, gridSize.y, gridSize.z) * particleDiameter * 0.5f;
+		Vector3 pos = gridPosition - halfSize;
+		shader.SetFloats("gridStartPosition", new float[] { pos.x, pos.y, pos.z });
 
 		int particleCount = rigidBodyCount * particlesPerBody;
 		// Get Kernels
 		kernelGenerateParticleValues = shader.FindKernel("GenerateParticleValues");
 		kernelClearGrid = shader.FindKernel("ClearGrid");
 		kernelPopulateGrid = shader.FindKernel("PopulateGrid");
-		kernelCollisionDetection = shader.FindKernel("CollisionDetection");
+		kernelCollisionDetectionWithGrid = shader.FindKernel("CollisionDetectionWithGrid");
 		kernelComputeMomenta = shader.FindKernel("ComputeMomenta");
 		kernelComputePositionAndRotation = shader.FindKernel("ComputePositionAndRotation");
+		kernelCollisionDetection = shader.FindKernel("CollisionDetection");
 
 		// Count Thread Groups
 		groupsPerRigidBody = Mathf.CeilToInt(rigidBodyCount / 8.0f);
@@ -260,9 +259,9 @@ public class GPUPhysics : MonoBehaviour {
 		shader.SetBuffer(kernelPopulateGrid, "voxelGridBuffer", voxelGridBuffer);
 		shader.SetBuffer(kernelPopulateGrid, "particlesBuffer", particlesBuffer);
 		
-		// kernel 3 Collision Detection
-		shader.SetBuffer(kernelCollisionDetection, "particlesBuffer", particlesBuffer);
-		shader.SetBuffer(kernelCollisionDetection, "voxelGridBuffer", voxelGridBuffer);
+		// kernel 3 Collision Detection using Grid
+		shader.SetBuffer(kernelCollisionDetectionWithGrid, "particlesBuffer", particlesBuffer);
+		shader.SetBuffer(kernelCollisionDetectionWithGrid, "voxelGridBuffer", voxelGridBuffer);
 		
 		// kernel 4 Computation of Momenta
 		shader.SetBuffer(kernelComputeMomenta, "rigidBodiesBuffer", rigidBodiesBuffer);
@@ -270,6 +269,10 @@ public class GPUPhysics : MonoBehaviour {
 		
 		// kernel 5 Compute Position and Rotation
 		shader.SetBuffer(kernelComputePositionAndRotation, "rigidBodiesBuffer", rigidBodiesBuffer);
+
+		// kernel 6 Collision Detection
+		shader.SetBuffer(kernelCollisionDetection, "particlesBuffer", particlesBuffer);
+		shader.SetBuffer(kernelCollisionDetection, "voxelGridBuffer", voxelGridBuffer);
 	}
 
 	void InitInstancing() {
@@ -309,9 +312,16 @@ public class GPUPhysics : MonoBehaviour {
 
 		for (int i=0; i<stepsPerUpdate; i++) {
 			shader.Dispatch(kernelGenerateParticleValues, groupsPerRigidBody, 1, 1);
-			shader.Dispatch(kernelClearGrid, groupsPerGridCell, 1, 1);
-			shader.Dispatch(kernelPopulateGrid, groupsPerParticle, 1, 1);
-			shader.Dispatch(kernelCollisionDetection, groupsPerParticle, 1, 1);
+			if (useGrid)
+			{
+				shader.Dispatch(kernelClearGrid, groupsPerGridCell, 1, 1);
+				shader.Dispatch(kernelPopulateGrid, groupsPerParticle, 1, 1);
+				shader.Dispatch(kernelCollisionDetectionWithGrid, groupsPerParticle, 1, 1);
+            }
+            else
+            {
+				shader.Dispatch(kernelCollisionDetection, groupsPerParticle, 1, 1);
+			}
 			shader.Dispatch(kernelComputeMomenta, groupsPerRigidBody, 1, 1);
 			shader.Dispatch(kernelComputePositionAndRotation, groupsPerRigidBody, 1, 1);
 		}
