@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class GPUPhysics : MonoBehaviour {
+public class GPUPhysicsCubes : MonoBehaviour {
 	struct RigidBody
     {
 		public Vector3 position;
@@ -114,6 +114,8 @@ public class GPUPhysics : MonoBehaviour {
 	private int groupsPerGridCell;
 	private int deltaTimeID;
 
+	int activeCount = 0;
+
 	private int frameCounter;
 
 	void Start() {
@@ -148,14 +150,12 @@ public class GPUPhysics : MonoBehaviour {
 
 	void InitRigidBodies()
     {
-		Vector3 spawnPosition = new Vector3(0, 5, 0);
-
 		int pIndex = 0;
 
 		for(int i=0; i<rigidBodyCount; i++)
         {
-			Vector3 pos = spawnPosition;// + Random.insideUnitSphere * 10.0f;
-			pos.y += i * 2;
+			Vector3 pos = Random.insideUnitSphere * 5.0f;
+			pos.y += 15;
 			rigidBodiesArray[i] = new RigidBody(pos, pIndex, particlesPerBody);
 			pIndex += particlesPerBody;
 		}
@@ -280,7 +280,7 @@ public class GPUPhysics : MonoBehaviour {
 		// Setup Indirect Renderer
 		cubeMaterial.SetBuffer("rigidBodiesBuffer", rigidBodiesBuffer);
 
-		uint[] args = new uint[] { cubeMesh.GetIndexCount(0), (uint)rigidBodyCount, 0, 0, 0 };
+		uint[] args = new uint[] { cubeMesh.GetIndexCount(0), (uint)1, 0, 0, 0 };
 		argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
 		argsBuffer.SetData(args);
 		
@@ -297,15 +297,19 @@ public class GPUPhysics : MonoBehaviour {
 			argsLineBuffer.SetData(lineArgs);
 
 			sphereMaterial.SetBuffer("particlesBuffer", particlesBuffer);
-			sphereMaterial.SetVector("scale", new Vector4(particleDiameter * 0.5f, particleDiameter * 0.5f, particleDiameter * 0.5f, 1.0f));
+			sphereMaterial.SetFloat("scale", particleDiameter * 0.5f);
 			
-			lineMaterial.SetBuffer("rigidBodiesBuffer", rigidBodiesBuffer);
+			lineMaterial.SetBuffer("particlesBuffer", particlesBuffer);
 		}
 	}
 
 	void Update() {
-		if (frameCounter++ < 10) {
-			return;
+		if (activeCount<rigidBodyCount && frameCounter++ > 5) {
+			activeCount++;
+			frameCounter = 0;
+			shader.SetInt("activeCount", activeCount);
+			uint[] args = new uint[] { cubeMesh.GetIndexCount(0), (uint)activeCount, 0, 0, 0 };
+			argsBuffer.SetData(args);
 		}
 
 		float dt = Time.deltaTime/stepsPerUpdate;

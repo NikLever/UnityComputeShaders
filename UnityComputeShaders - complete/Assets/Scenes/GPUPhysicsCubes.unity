@@ -267,7 +267,7 @@ MonoBehaviour:
   gridPosition: {x: 0, y: 0, z: 0}
   useGrid: 1
   rigidBodyCount: 300
-  stepsPerUpdate: 10
+  stepsPerUpdate: 18
 --- !u!4 &411714672
 Transform:
   m_ObjectHideFlags: 0

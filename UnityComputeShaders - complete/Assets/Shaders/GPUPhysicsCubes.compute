@@ -45,6 +45,7 @@ inline float3 quat_mul(float4 q, float3 v)
 // dampingCoefficient 				(float) (Equation 11)
 // tangentialCoefficient 			(float) (Equation 12)
 // particleCount					(int)number of particles
+// activeCount						(int) active rigid bodies
 struct RigidBody
 {
 	float3 position;
@@ -311,41 +312,44 @@ float frictionCoefficient;
 float angularFrictionCoefficient;
 float angularForceScalar;
 float linearForceScalar;
+int activeCount;
 
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 {
-	float3 relativePosition 	= float3(0,0,0);
-	float3 linearForce 			= float3(0,0,0);
-	float3 angularForce 		= float3(0,0,0);
+	if (id.x<activeCount){
+		float3 relativePosition 	= float3(0,0,0);
+		float3 linearForce 			= float3(0,0,0);
+		float3 angularForce 		= float3(0,0,0);
 
-	RigidBody body = rigidBodiesBuffer[id.x];
+		RigidBody body = rigidBodiesBuffer[id.x];
 
-	for (int i = 0; i < body.particleCount; i++) 
-	{
-		Particle particle = particlesBuffer[body.particleIndex + i];
-		relativePosition  = particle.offsetPosition;
-		linearForce 	  += particle.force;
-		angularForce 	  += cross(relativePosition, particle.force);	
+		for (int i = 0; i < body.particleCount; i++) 
+		{
+			Particle particle = particlesBuffer[body.particleIndex + i];
+			relativePosition  = particle.offsetPosition;
+			linearForce 	  += particle.force;
+			angularForce 	  += cross(relativePosition, particle.force);	
+		}
+
+		float threshold = 1.0 / pow(10.0,6);
+
+		float cubeMass = particleMass * body.particleCount;
+		body.velocity /= 1.0 + deltaTime*frictionCoefficient;
+		body.velocity += linearForceScalar * deltaTime * linearForce * cubeMass;
+		if (length(body.velocity) < threshold) {
+			body.velocity = 0;
+		}
+
+		// new rotation
+		body.angularVelocity /= 1.0 + deltaTime*angularFrictionCoefficient;
+		body.angularVelocity += angularForceScalar * deltaTime * angularForce; // probably wrong  
+		if (length(body.angularVelocity) < threshold) {
+			body.angularVelocity = 0;
+		}
+
+		rigidBodiesBuffer[id.x] = body;
 	}
-
-	float threshold = 1.0 / pow(10.0,6);
-
-	float cubeMass = particleMass * body.particleCount;
-	body.velocity /= 1.0 + deltaTime*frictionCoefficient;
-	body.velocity += linearForceScalar * deltaTime * linearForce * cubeMass;
-	if (length(body.velocity) < threshold) {
-		body.velocity = 0;
-	}
-
-	// new rotation
-	body.angularVelocity /= 1.0 + deltaTime*angularFrictionCoefficient;
-	body.angularVelocity += angularForceScalar * deltaTime * angularForce; // probably wrong  
-	if (length(body.angularVelocity) < threshold) {
-		body.angularVelocity = 0;
-	}
-
-	rigidBodiesBuffer[id.x] = body;
 }
 
 /////////////////////////////
@@ -356,12 +360,13 @@ void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
 {
-	RigidBody body = rigidBodiesBuffer[id.x];
-	body.position += body.velocity * deltaTime;
+	if (id.x<activeCount){
+		RigidBody body = rigidBodiesBuffer[id.x];
+		body.position += body.velocity * deltaTime;
 
-	float4 omega = float4(body.angularVelocity, 0);
-	body.quaternion = normalize(body.quaternion + deltaTime * (0.5*quat_concat(omega, body.quaternion)));
+		float4 omega = float4(body.angularVelocity, 0);
+		body.quaternion = normalize(body.quaternion + deltaTime * (0.5*quat_concat(omega, body.quaternion)));
 
-	rigidBodiesBuffer[id.x] = body;
-
+		rigidBodiesBuffer[id.x] = body;
+	}
 }
