@@ -227,6 +227,7 @@ public class GPUPhysics : MonoBehaviour {
 		shader.SetFloat("angularForceScalar", angularForceScalar);
 		shader.SetFloat("linearForceScalar", linearForceScalar);
 		shader.SetFloat("particleMass", cubeMass / particlesPerBody);
+		shader.SetInt("particleCount", rigidBodyCount * particlesPerBody);
 		Vector3 halfSize = new Vector3(gridSize.x, gridSize.y, gridSize.z) * particleDiameter * 0.5f;
 		Vector3 pos = gridPosition - halfSize;
 		shader.SetFloats("gridStartPosition", new float[] { pos.x, pos.y, pos.z });

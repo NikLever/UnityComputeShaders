@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ParticleForceLineMaterial
-  m_Shader: {fileID: 4800000, guid: 128fff63a3658b34e8166319b323076d, type: 3}
+  m_Name: PhysicsParticle
+  m_Shader: {fileID: 4800000, guid: 123856b5807caf744942bb236785a78b, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
@@ -73,5 +73,5 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.31248856, g: 1, b: 0, a: 1}
+    - _Color: {r: 0.8396226, g: 0.11485406, b: 0.11485406, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

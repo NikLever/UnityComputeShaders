@@ -36,19 +36,15 @@ inline float3 quat_mul(float4 q, float3 v)
 // Per Particle		6
 #pragma kernel CollisionDetection
 
-
-// Buffers
-// voxelGridBuffer				(RWStructuredBuffer<int4>)
-
-
 // Constants
-// gridStartPosition				(float3) // lower left bound
+// gridStartPosition				(float3) // lower left backward corner
 // gridDimensions 					(int3)
 // gridMax							(int) gridDimensions.x * gridDimensions.y * gridDimensions.z * 4
 // particleDiameter 				(float)
 // springCoefficient 				(float) (negative) (Equation 10)
 // dampingCoefficient 				(float) (Equation 11)
 // tangentialCoefficient 			(float) (Equation 12)
+// particleCount					(int)number of particles
 struct RigidBody
 {
 	float3 position;
@@ -70,13 +66,12 @@ struct Particle
 
 shared RWStructuredBuffer<RigidBody> rigidBodiesBuffer;
 shared RWStructuredBuffer<Particle> particlesBuffer;
+shared RWStructuredBuffer<int4> voxelGridBuffer;
 
+int particleCount;
 int particlesPerRigidBody;
 float deltaTime;
 float particleMass;
-float3x3 inertialTensor;
-float3x3 inverseInertialTensor;
-
 
 //////////////////////////////
 // Generate Particle Values //
@@ -89,13 +84,6 @@ float3x3 inverseInertialTensor;
 // and particle velocities
 //
 //////////////////////////////
-
-
-float3 rotateVectorByQuaternion(float4 quaternion, float3 vec)
-{
-	return quat_mul(quaternion, vec);
-}
-
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
 {
@@ -108,13 +96,6 @@ void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
 		particle.position = body.position + particle.offsetPosition;
 		particle.velocity = body.velocity + cross(body.angularVelocity, particle.offsetPosition);
 		particlesBuffer[index] = particle;
-
-		//Until I've update the particles code
-		//int p_id = index;
-		//particleRelativePositions[p_id] = rotateVectorByQuaternion(body.quaternion, particleInitialRelativePositions[p_id]);
-		//particlePositions[p_id] = body.position + particleRelativePositions[p_id];
-		//particleVelocities[p_id] = body.velocity + cross(body.angularVelocity, particleRelativePositions[p_id]);
-		//End deletable section
 
 		index++;
     }
@@ -129,15 +110,11 @@ void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
 // to populate the
 // voxelGridBuffer
 // Input
-// StructuredBuffer<float3> particlePositions; (defined above)
 int3 gridDimensions;
 float3 gridStartPosition;
 int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
 float particleDiameter;
-// Output
-RWStructuredBuffer<int4> voxelGridBuffer;
-// DEBUG ONLY
-//RWStructuredBuffer<int3> debugParticleVoxelPositions;
+
 [numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
 void ClearGrid (uint3 id : SV_DispatchThreadID)
 {
@@ -188,13 +165,10 @@ void PopulateGrid (uint3 id : SV_DispatchThreadID)
 // Per Particle
 // Use particle positions, grid and velocity to compute Particle force
 // Input
-// StructuredBuffer<float3> particlesBuffer;
-// RWStructuredBuffer<int4> voxelGridBuffer; (defined in Grid Generation)
 float springCoefficient;
 float dampingCoefficient;
 float tangentialCoefficient;
-// Output
-//RWStructuredBuffer<float3> particleForces;
+
 float3 CollisionReaction(int j_id, int i_id)
 {
 	// the force on particle i after colliding with particle j is modelled as follows
@@ -315,14 +289,17 @@ void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void CollisionDetection (uint3 id : SV_DispatchThreadID)
 {
-	int i = id.x;
-	int3 i_gridLocation = GetParticleGridLocation(i);
 	float3 force = 0;
-	
-	force.y -= gravityCoefficient;
-	force += CollisionReactionWithGround(i);
 
-	particlesBuffer[i].force = force;
+	for(int i=0; i<particleCount; i++){
+		if (i==id.x) continue;
+		force += CollisionReaction(i, id.x);
+    }
+
+	force.y -= gravityCoefficient;
+	force += CollisionReactionWithGround(id.x);
+
+	particlesBuffer[id.x].force = force;
 }
 
 ////////////////////////////

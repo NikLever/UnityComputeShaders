@@ -244,16 +244,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67d89b88c176d4beeaeaf139994b1f9b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_debugWireframe: 0
+  debugWireframe: 0
   shader: {fileID: 7200000, guid: 1dde7010a586a4bc5b942d791293614b, type: 3}
   cubeMaterial: {fileID: 2100000, guid: 0beffabe7c634451d9527998eab0a5e4, type: 2}
   sphereMaterial: {fileID: 2100000, guid: 0d315fea00a36764c9226eb565d21116, type: 2}
   lineMaterial: {fileID: 2100000, guid: 74605ee591d3be844b20a229dcfe0267, type: 2}
-  lineAngularMaterial: {fileID: 0}
-  m_bounds:
+  bounds:
     m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 20, y: 20, z: 20}
-  m_cubeMass: 0.5
+    m_Extent: {x: 0, y: 0, z: 0}
+  cubeMass: 1
   scale: 1
   particlesPerEdge: 4
   springCoefficient: 3
@@ -265,9 +264,10 @@ MonoBehaviour:
   angularForceScalar: 100
   linearForceScalar: 100
   gridSize: {x: 10, y: 10, z: 10}
-  gridStartPosition: {x: -3, y: 0, z: -3}
-  rigidBodyCount: 100
-  tick_rate: 300
+  gridPosition: {x: 0, y: 0, z: 0}
+  useGrid: 0
+  rigidBodyCount: 3
+  stepsPerUpdate: 10
 --- !u!4 &411714672
 Transform:
   m_ObjectHideFlags: 0
