@@ -3,7 +3,16 @@
 #define RIGID_BODY_THREAD_COUNT 8
 #define PARTICLE_THREAD_COUNT 8
 
-#include "includes/Quaternion.cginc"
+//#include "includes/Quaternion.cginc"
+inline float4 quat_concat(float4 q1, float4 q2)
+{
+  return float4(q1.w * q2.xyz + q2.w * q1.xyz + cross(q1.xyz, q2.xyz), q1.w * q2.w - dot(q1.xyz, q2.xyz));
+}
+
+inline float3 quat_mul(float4 q, float3 v)
+{
+  return dot(q.xyz, v) * q.xyz + q.w * q.w * v + 2.0 * q.w * cross(q.xyz, v) - cross(cross(q.xyz, v), q.xyz);
+}
 
 // Kernels
 // Per Rigid Body	0
@@ -347,15 +356,10 @@ void CollisionDetection (uint3 id : SV_DispatchThreadID)
 ////////////////////////////
 // Per RigidBdy
 // Use particleForces to compute the force and angular force on the rigid body
-// Input
-// RWStructuredBuffer<Particle> particlesBuffer;
-
 float frictionCoefficient;
 float angularFrictionCoefficient;
 float angularForceScalar;
 float linearForceScalar;
-// Output
-//RWStructuredBuffer<RigidBody> rigidBodiesBuffer;
 
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputeMomenta (uint3 id : SV_DispatchThreadID)
@@ -369,23 +373,23 @@ void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 	for (int i = 0; i < body.particleCount; i++) 
 	{
 		Particle particle = particlesBuffer[body.particleIndex + i];
-		relativePosition 			= particle.offsetPosition;
-		linearForce 				+= particle.force;
-		angularForce 				+= cross(relativePosition, particle.force);	
+		relativePosition  = particle.offsetPosition;
+		linearForce 	  += particle.force;
+		angularForce 	  += cross(relativePosition, particle.force);	
 	}
 
 	float threshold = 1.0 / pow(10.0,6);
 
 	float cubeMass = particleMass * body.particleCount;
 	body.velocity /= 1.0 + deltaTime*frictionCoefficient;
-	body.velocity += linearForceScalar * deltaTime * linearForce/cubeMass;
+	body.velocity += linearForceScalar * deltaTime * linearForce * cubeMass;
 	if (length(body.velocity) < threshold) {
 		body.velocity = 0;
 	}
 
 	// new rotation
 	body.angularVelocity /= 1.0 + deltaTime*angularFrictionCoefficient;
-	body.angularVelocity += angularForceScalar * deltaTime * angularForce; // probably wrong
+	body.angularVelocity += angularForceScalar * deltaTime * angularForce; // probably wrong  
 	if (length(body.angularVelocity) < threshold) {
 		body.angularVelocity = 0;
 	}
@@ -398,7 +402,6 @@ void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 /////////////////////////////
 // Per RigidBody
 // Use rigidBodyForce and rigidBodyTorque to compute the rigid body position and rotation.
-//RWStructuredBuffer<float3x3> inverseInertialMatrices;
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
 {

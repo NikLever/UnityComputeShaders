@@ -65,8 +65,8 @@ public class GPUPhysics : MonoBehaviour {
 	public Material cubeMaterial;
 	public Material sphereMaterial;
 	public Material lineMaterial;
-	public Bounds m_bounds;
-	public float m_cubeMass;
+	public Bounds bounds;
+	public float cubeMass;
 	public float scale;
 	public int particlesPerEdge;
 	public float springCoefficient;
@@ -230,7 +230,7 @@ public class GPUPhysics : MonoBehaviour {
 		shader.SetFloat("tangentialCoefficient", tangentialCoefficient);
 		shader.SetFloat("angularForceScalar", angularForceScalar);
 		shader.SetFloat("linearForceScalar", linearForceScalar);
-		shader.SetFloat("particleMass", m_cubeMass / particlesPerBody);
+		shader.SetFloat("particleMass", cubeMass / particlesPerBody);
 		shader.SetFloats("gridStartPosition", new float[] { gridStartPosition.x, gridStartPosition.y, gridStartPosition.z });
 
 		int particleCount = rigidBodyCount * particlesPerBody;
@@ -317,12 +317,12 @@ public class GPUPhysics : MonoBehaviour {
 		}
 
 		if (debugWireframe) {
-			Graphics.DrawMeshInstancedIndirect(sphereMesh, 0, sphereMaterial, m_bounds, m_bufferWithSphereArgs);
-			Graphics.DrawMeshInstancedIndirect(lineMesh, 0, lineMaterial, m_bounds, m_bufferWithLineArgs);
+			Graphics.DrawMeshInstancedIndirect(sphereMesh, 0, sphereMaterial, bounds, m_bufferWithSphereArgs);
+			Graphics.DrawMeshInstancedIndirect(lineMesh, 0, lineMaterial, bounds, m_bufferWithLineArgs);
 		}
         else
         {
-            Graphics.DrawMeshInstancedIndirect(cubeMesh, 0, cubeMaterial, m_bounds, argsBuffer);
+            Graphics.DrawMeshInstancedIndirect(cubeMesh, 0, cubeMaterial, bounds, argsBuffer);
 		}
 	}
 
