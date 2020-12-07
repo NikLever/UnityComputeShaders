@@ -1,0 +1,404 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#define CLEAR_GRID_THREAD_COUNT 8
+#define RIGID_BODY_THREAD_COUNT 8
+#define PARTICLE_THREAD_COUNT 8
+
+//#include "includes/Quaternion.cginc"
+inline float4 quat_concat(float4 q1, float4 q2)
+{
+  return float4(q1.w * q2.xyz + q2.w * q1.xyz + cross(q1.xyz, q2.xyz), q1.w * q2.w - dot(q1.xyz, q2.xyz));
+}
+
+inline float3 quat_mul(float4 q, float3 v)
+{
+  return dot(q.xyz, v) * q.xyz + q.w * q.w * v + 2.0 * q.w * cross(q.xyz, v) - cross(cross(q.xyz, v), q.xyz);
+}
+
+// Kernels
+// Per Rigid Body	0
+#pragma kernel GenerateParticleValues
+
+// Per Grid Cell	1
+#pragma kernel ClearGrid
+
+// Per Particle		2
+#pragma kernel PopulateGrid
+
+// Per Particle		3
+#pragma kernel CollisionDetectionWithGrid
+
+// Per Rigid Body	4
+#pragma kernel ComputeMomenta
+
+// Per Rigid Body	5
+#pragma kernel ComputePositionAndRotation
+
+// Per Particle		6
+#pragma kernel CollisionDetection
+
+// Constants
+// gridStartPosition				(float3) // lower left backward corner
+// gridDimensions 					(int3)
+// gridMax							(int) gridDimensions.x * gridDimensions.y * gridDimensions.z * 4
+// particleDiameter 				(float)
+// springCoefficient 				(float) (negative) (Equation 10)
+// dampingCoefficient 				(float) (Equation 11)
+// tangentialCoefficient 			(float) (Equation 12)
+// particleCount					(int)number of particles
+// activeCount						(int) active rigid bodies
+struct RigidBody
+{
+	float3 position;
+	float4 quaternion;
+	float3 velocity;
+	float3 angularVelocity;
+	int particleIndex;
+	int particleCount;
+};
+
+struct Particle
+{
+	float3 position;
+	float3 velocity;
+	float3 force;
+	float3 localPosition;
+	float3 offsetPosition;
+};
+
+struct Voxel
+{
+	int4 vox1;
+	int4 vox2;
+};
+
+shared RWStructuredBuffer<RigidBody> rigidBodiesBuffer;
+shared RWStructuredBuffer<Particle> particlesBuffer;
+shared RWStructuredBuffer<Voxel> voxelGridBuffer;
+
+int particleCount;
+int particlesPerRigidBody;
+float deltaTime;
+float particleMass;
+
+//////////////////////////////
+// Generate Particle Values //
+//////////////////////////////
+// Per Rigid Body
+// Use rigidBody positions and 
+// rigidBodyQuaternions to
+// Generate particle positions
+// and particle offsetPositions
+// and particle velocities
+//
+//////////////////////////////
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
+{
+	RigidBody body = rigidBodiesBuffer[id.x];
+	int index = body.particleIndex;
+
+	for (int i=0; i < body.particleCount; i++){
+		Particle particle = particlesBuffer[index];
+		particle.offsetPosition = quat_mul(body.quaternion, particle.localPosition);
+		particle.position = body.position + particle.offsetPosition;
+		particle.velocity = body.velocity + cross(body.angularVelocity, particle.offsetPosition);
+		particlesBuffer[index] = particle;
+
+		index++;
+    }
+}
+
+
+//////////////////////
+// Grid Generation //
+/////////////////////
+// Per Grid Cell
+// Use particlePositions
+// to populate the
+// voxelGridBuffer
+// Input
+int3 gridDimensions;
+float3 gridStartPosition;
+int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
+float particleDiameter;
+
+[numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
+void ClearGrid (uint3 id : SV_DispatchThreadID)
+{
+	Voxel voxel = voxelGridBuffer[id.x];
+	voxel.vox1.x = voxel.vox1.y = voxel.vox1.z = voxel.vox1.w = -1;
+	voxel.vox2.x = voxel.vox2.y = voxel.vox2.z = voxel.vox2.w = -1;
+	voxelGridBuffer[id.x] = voxel;
+}
+
+// Returns the grid index for particle p
+int GetParticleGridIndex(int id) {
+	int3 gridLocation = (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
+	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
+}
+
+// Returns the grid location for particle p
+int3 GetParticleGridLocation(int id) {
+	return (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
+}
+
+// Converts a grid location to a grid index
+int GetParticleGridIndex(int x, int y, int z) {
+	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void PopulateGrid (uint3 id : SV_DispatchThreadID)
+{
+	int index = GetParticleGridIndex(id.x);
+	// clamp gridIndex
+	if (index < gridMax && index >= 0)
+	{
+		Voxel voxel = voxelGridBuffer[index];
+		if (voxel.vox1.x==-1){
+			voxel.vox1.x = id.x;
+        }else if (voxel.vox1.y==-1){
+			voxel.vox1.y = id.x;
+        }else if (voxel.vox1.z==-1){
+			voxel.vox1.z = id.x;
+        }else if (voxel.vox1.w==-1){
+			voxel.vox1.w = id.x;
+        }else if (voxel.vox2.x==-1){
+			voxel.vox2.x = id.x;
+        }else if (voxel.vox2.y==-1){
+			voxel.vox2.y = id.x;
+        }else if (voxel.vox2.z==-1){
+			voxel.vox2.z = id.x;
+        }else if (voxel.vox2.w==-1){
+			voxel.vox2.w = id.x;
+        }
+		voxelGridBuffer[index] = voxel;
+	}
+}
+
+/////////////////////////
+// Collision Detection //
+/////////////////////////
+// Per Particle
+// Use particle positions, grid and velocity to compute Particle force
+// Input
+float springCoefficient;
+float dampingCoefficient;
+float tangentialCoefficient;
+
+float3 CollisionReaction(int j_id, int i_id)
+{
+	// the force on particle i after colliding with particle j is modelled as follows
+
+	Particle particleJ = particlesBuffer[j_id];
+	Particle particleI = particlesBuffer[i_id];
+
+	float3 relativePosition = particleJ.position - particleI.position; // position of j relative to i
+	float relativePositionMagnitude = length(relativePosition);
+
+	if (relativePositionMagnitude < particleDiameter)
+	{
+		float3 relativePositionNormalized = relativePosition / relativePositionMagnitude;
+
+		// repulsive force (Equation 10)
+		float3 repulsiveForce = -springCoefficient * (particleDiameter - relativePositionMagnitude) * relativePositionNormalized;
+		// damping force (Equation 11)
+		// https://www2.msm.ctw.utwente.nl/sluding/PAPERS/luding_alert2008.pdf 
+		// says that the damping force acts along the normal....
+		// not sure whether relativeVelocity is relative to particle i's position or particle i's velocity
+		// using velocity here
+		float3 relativeVelocity = particleJ.velocity - particleI.velocity; // not sure if correct
+		float3 dampingForce = dampingCoefficient * relativeVelocity;
+
+		// tangential force (Equation 12)
+		float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
+		float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
+
+		return repulsiveForce + dampingForce + tangentialForce;
+	}
+
+	return float3(0,0,0);
+}
+
+float3 CollisionReactionWithGround(int id) {
+	Particle particle = particlesBuffer[id];
+
+	float3 groundParticlePosition = particle.position;
+	groundParticlePosition.y = -particleDiameter*0.5;
+
+
+	float3 relativePosition = groundParticlePosition - particle.position; // position of j relative to i
+	float relativePositionMagnitude = length(relativePosition);
+
+	if (relativePositionMagnitude < particleDiameter)
+	{
+		float3 relativePositionNormalized = relativePosition / relativePositionMagnitude;
+
+		// repulsive force (Equation 10)
+		float3 repulsiveForce = -springCoefficient * (particleDiameter - relativePositionMagnitude) * relativePositionNormalized;
+		// damping force (Equation 11)
+		// https://www2.msm.ctw.utwente.nl/sluding/PAPERS/luding_alert2008.pdf 
+		// says that the damping force acts along the normal....
+		// not sure whether relativeVelocity is relative to particle i's position or particle i's velocity
+		// using velocity here
+
+		float3 relativeVelocity = float3(0.0f,0.0f,0.0f) - particle.velocity; // not sure if correct
+		float3 dampingForce = dampingCoefficient * relativeVelocity;
+
+		// tangential force (Equation 12)
+		float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
+		float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
+
+		return repulsiveForce + dampingForce + tangentialForce;
+
+	}
+
+	return float3(0.0f,0.0f,0.0f);
+}
+
+// checks cell x,y,z for collision with i, calls CollisionReaction if so
+float3 ForceFromGridCell(int i, int x, int y, int z) {
+	float3 force = float3(0,0,0);
+	if (x > -1 && y > -1 && z > -1 && x < gridDimensions.x && y < gridDimensions.y && z < gridDimensions.z) {
+		int index = GetParticleGridIndex(x,y,z);
+		if (index < gridMax) {
+			Voxel voxel = voxelGridBuffer[index];
+			int j = voxel.vox1.x;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+
+			j = voxel.vox1.y;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+
+			j = voxel.vox1.z;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+			
+			j = voxel.vox1.w;
+			if (j > -1  && j != i)
+				force += CollisionReaction(j, i);
+
+			j = voxel.vox2.x;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+			j = voxel.vox2.y;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+
+			j = voxel.vox2.z;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+			
+			j = voxel.vox2.w;
+			if (j > -1  && j != i)
+				force += CollisionReaction(j, i);
+		}
+	}
+	return force;
+}
+
+float gravityCoefficient;
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
+{
+	float3 force = 0;
+	int3 loc = GetParticleGridLocation(id.x);
+
+	for(int x = loc.x-1; x<=loc.x+1; x++){
+		for(int y = loc.y-1; y<=loc.y+1; y++){
+			for(int z = loc.z-1; z<=loc.z+1; z++){
+				force += ForceFromGridCell(id.x, x, y, z);
+			}
+		}	
+    }
+
+	force.y -= gravityCoefficient;
+	force += CollisionReactionWithGround(id.x);
+
+	particlesBuffer[id.x].force = force;
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void CollisionDetection (uint3 id : SV_DispatchThreadID)
+{
+	float3 force = 0;
+
+	for(int i=0; i<particleCount; i++){
+		if (i==(int)id.x) continue;
+		force += CollisionReaction(i, id.x);
+    }
+
+	force.y -= gravityCoefficient;
+	force += CollisionReactionWithGround(id.x);
+
+	particlesBuffer[id.x].force = force;
+}
+
+////////////////////////////
+// Computation Of Momenta //
+////////////////////////////
+// Per RigidBdy
+// Use particleForces to compute the force and angular force on the rigid body
+float frictionCoefficient;
+float angularFrictionCoefficient;
+float angularForceScalar;
+float linearForceScalar;
+int activeCount;
+
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void ComputeMomenta (uint3 id : SV_DispatchThreadID)
+{
+	if (id.x<(uint)activeCount){
+		float3 relativePosition 	= float3(0,0,0);
+		float3 linearForce 			= float3(0,0,0);
+		float3 angularForce 		= float3(0,0,0);
+
+		RigidBody body = rigidBodiesBuffer[id.x];
+
+		for (int i = 0; i < body.particleCount; i++) 
+		{
+			Particle particle = particlesBuffer[body.particleIndex + i];
+			relativePosition  = particle.offsetPosition;
+			linearForce 	  += particle.force;
+			angularForce 	  += cross(relativePosition, particle.force);	
+		}
+
+		float threshold = 1.0 / pow(10.0,6);
+
+		float cubeMass = particleMass * body.particleCount;
+		body.velocity /= 1.0 + deltaTime*frictionCoefficient;
+		body.velocity += linearForceScalar * deltaTime * linearForce * cubeMass;
+		if (length(body.velocity) < threshold) {
+			body.velocity = 0;
+		}
+
+		// new rotation
+		body.angularVelocity /= 1.0 + deltaTime*angularFrictionCoefficient;
+		body.angularVelocity += angularForceScalar * deltaTime * angularForce; // probably wrong  
+		if (length(body.angularVelocity) < threshold) {
+			body.angularVelocity = 0;
+		}
+
+		rigidBodiesBuffer[id.x] = body;
+	}
+}
+
+/////////////////////////////
+// Computation Of Position //
+/////////////////////////////
+// Per RigidBody
+// Use rigidBodyForce and rigidBodyTorque to compute the rigid body position and rotation.
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
+{
+	if (id.x<(uint)activeCount){
+		RigidBody body = rigidBodiesBuffer[id.x];
+		body.position += body.velocity * deltaTime;
+
+		float4 omega = float4(body.angularVelocity, 0);
+		body.quaternion = normalize(body.quaternion + deltaTime * (0.5*quat_concat(omega, body.quaternion)));
+
+		rigidBodiesBuffer[id.x] = body;
+	}
+}
