@@ -65,9 +65,15 @@ struct Particle
 	float3 offsetPosition;
 };
 
+struct Voxel
+{
+	int4 vox1;
+	int4 vox2;
+};
+
 shared RWStructuredBuffer<RigidBody> rigidBodiesBuffer;
 shared RWStructuredBuffer<Particle> particlesBuffer;
-shared RWStructuredBuffer<int4> voxelGridBuffer;
+shared RWStructuredBuffer<Voxel> voxelGridBuffer;
 
 int particleCount;
 int particlesPerRigidBody;
@@ -119,10 +125,10 @@ float particleDiameter;
 [numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
 void ClearGrid (uint3 id : SV_DispatchThreadID)
 {
-	voxelGridBuffer[id.x].r = -1;
-	voxelGridBuffer[id.x].g = -1;
-	voxelGridBuffer[id.x].b = -1;
-	voxelGridBuffer[id.x].a = -1;
+	Voxel voxel = voxelGridBuffer[id.x];
+	voxel.vox1.x = voxel.vox1.y = voxel.vox1.z = voxel.vox1.w = -1;
+	voxel.vox2.x = voxel.vox2.y = voxel.vox2.z = voxel.vox2.w = -1;
+	voxelGridBuffer[id.x] = voxel;
 }
 
 // Returns the grid index for particle p
@@ -144,19 +150,29 @@ int GetParticleGridIndex(int x, int y, int z) {
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void PopulateGrid (uint3 id : SV_DispatchThreadID)
 {
-	int p_id = id.x;
-	int gridIndex = GetParticleGridIndex(p_id);
+	int index = GetParticleGridIndex(id.x);
 	// clamp gridIndex
-	if (gridIndex < gridMax && gridIndex > -1)
+	if (index < gridMax && index >= 0)
 	{
-		int originalValue = 0;
-		InterlockedCompareExchange(voxelGridBuffer[gridIndex].x, -1, p_id, originalValue);
-		if (originalValue != -1)
-			InterlockedCompareExchange(voxelGridBuffer[gridIndex].y, -1, p_id, originalValue);
-		if (originalValue != -1)
-			InterlockedCompareExchange(voxelGridBuffer[gridIndex].z, -1, p_id, originalValue);
-		if (originalValue != -1)
-			InterlockedCompareExchange(voxelGridBuffer[gridIndex].w, -1, p_id, originalValue);
+		Voxel voxel = voxelGridBuffer[index];
+		if (voxel.vox1.x==-1){
+			voxel.vox1.x = id.x;
+        }else if (voxel.vox1.y==-1){
+			voxel.vox1.y = id.x;
+        }else if (voxel.vox1.z==-1){
+			voxel.vox1.z = id.x;
+        }else if (voxel.vox1.w==-1){
+			voxel.vox1.w = id.x;
+        }else if (voxel.vox2.x==-1){
+			voxel.vox2.x = id.x;
+        }else if (voxel.vox2.y==-1){
+			voxel.vox2.y = id.x;
+        }else if (voxel.vox2.z==-1){
+			voxel.vox2.z = id.x;
+        }else if (voxel.vox2.w==-1){
+			voxel.vox2.w = id.x;
+        }
+		voxelGridBuffer[index] = voxel;
 	}
 }
 
@@ -244,21 +260,37 @@ float3 CollisionReactionWithGround(int id) {
 float3 ForceFromGridCell(int i, int x, int y, int z) {
 	float3 force = float3(0,0,0);
 	if (x > -1 && y > -1 && z > -1 && x < gridDimensions.x && y < gridDimensions.y && z < gridDimensions.z) {
-		int g_index = GetParticleGridIndex(x,y,z);
-		if (g_index < gridMax) {
-			int j = voxelGridBuffer[g_index].x;
+		int index = GetParticleGridIndex(x,y,z);
+		if (index < gridMax) {
+			Voxel voxel = voxelGridBuffer[index];
+			int j = voxel.vox1.x;
 			if (j > -1 && j != i)
 				force += CollisionReaction(j, i);
 
-			j = voxelGridBuffer[g_index].y;
+			j = voxel.vox1.y;
 			if (j > -1 && j != i)
 				force += CollisionReaction(j, i);
 
-			j = voxelGridBuffer[g_index].z;
+			j = voxel.vox1.z;
 			if (j > -1 && j != i)
 				force += CollisionReaction(j, i);
 			
-			j = voxelGridBuffer[g_index].w;
+			j = voxel.vox1.w;
+			if (j > -1  && j != i)
+				force += CollisionReaction(j, i);
+
+			j = voxel.vox2.x;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+			j = voxel.vox2.y;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+
+			j = voxel.vox2.z;
+			if (j > -1 && j != i)
+				force += CollisionReaction(j, i);
+			
+			j = voxel.vox2.w;
 			if (j > -1  && j != i)
 				force += CollisionReaction(j, i);
 		}
@@ -293,7 +325,7 @@ void CollisionDetection (uint3 id : SV_DispatchThreadID)
 	float3 force = 0;
 
 	for(int i=0; i<particleCount; i++){
-		if (i==id.x) continue;
+		if (i==(int)id.x) continue;
 		force += CollisionReaction(i, id.x);
     }
 
@@ -317,7 +349,7 @@ int activeCount;
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 {
-	if (id.x<activeCount){
+	if (id.x<(uint)activeCount){
 		float3 relativePosition 	= float3(0,0,0);
 		float3 linearForce 			= float3(0,0,0);
 		float3 angularForce 		= float3(0,0,0);
@@ -360,7 +392,7 @@ void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
 {
-	if (id.x<activeCount){
+	if (id.x<(uint)activeCount){
 		RigidBody body = rigidBodiesBuffer[id.x];
 		body.position += body.velocity * deltaTime;
 

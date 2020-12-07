@@ -25,16 +25,7 @@ public class VoxelizeMesh : MonoBehaviour
         }
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (meshToVoxelize)
-        {
-            Voxelize(meshToVoxelize);
-        }       
-    }
-
-    void Voxelize(Mesh mesh)
+    public void Voxelize(Mesh mesh)
     {
         GameObject go = new GameObject();
         go.layer = 9;

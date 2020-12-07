@@ -209,7 +209,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 286479827}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.18, z: 0}
   m_LocalScale: {x: 20, y: 1, z: 20}
   m_Children: []
   m_Father: {fileID: 0}
@@ -250,18 +250,15 @@ MonoBehaviour:
   rigidBodyMaterial: {fileID: 2100000, guid: 0beffabe7c634451d9527998eab0a5e4, type: 2}
   sphereMaterial: {fileID: 2100000, guid: 0d315fea00a36764c9226eb565d21116, type: 2}
   lineMaterial: {fileID: 2100000, guid: 74605ee591d3be844b20a229dcfe0267, type: 2}
-  meshToVoxelise: {fileID: -2432090755550338912, guid: ea683a209d8984d068fab7cece2058b1,
-    type: 3}
-  yParticleCount: 4
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 20, y: 20, z: 20}
   cubeMass: 1
   scale: 1
-  springCoefficient: 2.5
+  springCoefficient: 1.5
   dampingCoefficient: 0.01
   tangentialCoefficient: 0.01
-  gravityCoefficient: 0.002
+  gravityCoefficient: 0.004
   frictionCoefficient: 0.1
   angularFrictionCoefficient: 0.1
   angularForceScalar: 100
@@ -269,8 +266,8 @@ MonoBehaviour:
   gridSize: {x: 20, y: 20, z: 20}
   gridPosition: {x: 0, y: 0, z: 0}
   useGrid: 1
-  rigidBodyCount: 100
-  stepsPerUpdate: 10
+  rigidBodyCount: 1000
+  stepsPerUpdate: 8
 --- !u!4 &411714672
 Transform:
   m_ObjectHideFlags: 0

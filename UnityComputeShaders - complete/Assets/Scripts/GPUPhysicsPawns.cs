@@ -91,7 +91,7 @@ public class GPUPhysicsPawns : MonoBehaviour {
 	private ComputeBuffer argsBuffer;
 	private ComputeBuffer argsSphereBuffer;
 	private ComputeBuffer argsLineBuffer;
-	private ComputeBuffer voxelGridBuffer;                 // int4
+	private ComputeBuffer voxelGridBuffer;                 // int4*2
 	
 	private int kernelGenerateParticleValues;
 	private int kernelClearGrid;
@@ -117,14 +117,16 @@ public class GPUPhysicsPawns : MonoBehaviour {
 	private int frameCounter;
 
 	void Start() {
-		Application.targetFrameRate = 300;
+		//Application.targetFrameRate = 300;
 
 		cubeScale = new Vector3(scale, scale, scale);
 
 		VoxelizeMesh voxelizeMesh = GetComponent<VoxelizeMesh>();
+		mesh = voxelizeMesh.meshToVoxelize;
+		voxelizeMesh.Voxelize(mesh);
 		particleInitialPositions = voxelizeMesh.PositionList;
 		particlesPerBody = particleInitialPositions.Count;
-		mesh = voxelizeMesh.meshToVoxelize;
+		
 		vertexCount = mesh.GetIndexCount(0);
 		particleDiameter = voxelizeMesh.ParticleSize;
 
@@ -146,7 +148,7 @@ public class GPUPhysicsPawns : MonoBehaviour {
     {
 		rigidBodiesArray = new RigidBody[rigidBodyCount];
 		particlesArray = new Particle[rigidBodyCount * particlesPerBody];
-		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 4];
+		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 8];
 	}
 
 	void InitRigidBodies()
@@ -192,7 +194,7 @@ public class GPUPhysicsPawns : MonoBehaviour {
 		particlesBuffer.SetData(particlesArray);
 
 		int numGridCells = gridSize.x * gridSize.y * gridSize.z;
-		voxelGridBuffer = new ComputeBuffer(numGridCells, 4 * sizeof(int));
+		voxelGridBuffer = new ComputeBuffer(numGridCells, 8 * sizeof(int));
 	}
 
 	void InitShader()

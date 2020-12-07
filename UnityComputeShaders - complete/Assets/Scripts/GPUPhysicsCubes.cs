@@ -145,7 +145,7 @@ public class GPUPhysicsCubes : MonoBehaviour {
     {
 		rigidBodiesArray = new RigidBody[rigidBodyCount];
 		particlesArray = new Particle[rigidBodyCount * particlesPerBody];
-		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 4];
+		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 8];
 	}
 
 	void InitRigidBodies()
@@ -206,7 +206,7 @@ public class GPUPhysicsCubes : MonoBehaviour {
 		particlesBuffer.SetData(particlesArray);
 
 		int numGridCells = gridSize.x * gridSize.y * gridSize.z;
-		voxelGridBuffer = new ComputeBuffer(numGridCells, 4 * sizeof(int));
+		voxelGridBuffer = new ComputeBuffer(numGridCells, 8 * sizeof(int));
 	}
 
 	void InitShader()
@@ -229,7 +229,7 @@ public class GPUPhysicsCubes : MonoBehaviour {
 		shader.SetFloat("particleMass", cubeMass / particlesPerBody);
 		shader.SetInt("particleCount", rigidBodyCount * particlesPerBody);
 		Vector3 halfSize = new Vector3(gridSize.x, gridSize.y, gridSize.z) * particleDiameter * 0.5f;
-		Vector3 pos = gridPosition - halfSize;
+		Vector3 pos = gridPosition * particleDiameter - halfSize;
 		shader.SetFloats("gridStartPosition", new float[] { pos.x, pos.y, pos.z });
 
 		int particleCount = rigidBodyCount * particlesPerBody;
