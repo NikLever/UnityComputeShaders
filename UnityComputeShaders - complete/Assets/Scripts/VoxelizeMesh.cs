@@ -2,19 +2,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Voxelization : MonoBehaviour
+public class VoxelizeMesh : MonoBehaviour 
 {
-    struct Particle
-    {
-        public Vector3 position;
-    };
-
     public Mesh meshToVoxelize;
     public int yParticleCount = 4;
 
-    public GameObject prefab;
+    float particleSize;
 
-    List<Particle> particles = new List<Particle>();
+    public float ParticleSize{
+        get{
+            return particleSize; 
+        }
+    }
+
+    List<Vector3> positions = new List<Vector3>();
+
+    public List<Vector3> PositionList
+    {
+        get
+        {
+            return positions;
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -27,12 +36,6 @@ public class Voxelization : MonoBehaviour
 
     void Voxelize(Mesh mesh)
     {
-        particles.Clear();
-        foreach (Transform child in prefab.transform)
-        {
-            GameObject.DestroyImmediate(child.gameObject);
-        }
-
         GameObject go = new GameObject();
         go.layer = 9;
         MeshFilter mf = go.AddComponent<MeshFilter>();
@@ -46,7 +49,7 @@ public class Voxelization : MonoBehaviour
         RaycastHit hit;
 
         float radius = mesh.bounds.extents.y/yParticleCount;
-        float particleSize = radius * 2;
+        particleSize = radius * 2;
         Vector3 rayOffset = minExtents;
         Vector3 counts = mesh.bounds.extents / radius;
         Vector3Int particleCounts = new Vector3Int((int)counts.x, (int)counts.y, (int)counts.z);
@@ -89,15 +92,7 @@ public class Voxelization : MonoBehaviour
                         {
                             float gap = backPt.z - frontPt.z;
                             if (gap < radius * 0.5f) break;
-                            //Add a new Particle
-                            Particle particle = new Particle();
-                            particle.position = frontPt;
-                            //particle.position.z += offsetZ;
-                            particles.Add(particle);
-                            GameObject ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                            ball.transform.position = particle.position;
-                            ball.transform.localScale = scale;
-                            ball.transform.parent = go.transform;
+                            positions.Add(frontPt);
                             frontPt.z += particleSize;
                         }
                     }
