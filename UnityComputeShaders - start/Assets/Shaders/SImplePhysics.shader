@@ -42,18 +42,6 @@
 
             StructuredBuffer<Ball> ballsBuffer; 
          #endif
-
-        float4x4 look_at_matrix(float3 at, float3 eye, float3 up) {
-            float3 zaxis = normalize(at - eye);
-            float3 xaxis = normalize(cross(up, zaxis));
-            float3 yaxis = cross(zaxis, xaxis);
-            return float4x4(
-                xaxis.x, yaxis.x, zaxis.x, 0,
-                xaxis.y, yaxis.y, zaxis.y, 0,
-                xaxis.z, yaxis.z, zaxis.z, 0,
-                0, 0, 0, 1
-            );
-        }
      
          void vert(inout appdata_full v, out Input data)
         {
@@ -70,7 +58,6 @@
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 _Color = ballsBuffer[unity_InstanceID].color;
                 _BallPosition = ballsBuffer[unity_InstanceID].position;
-                //_LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidsBuffer[unity_InstanceID].direction * -1), float3(0.0, 1.0, 0.0));
             #endif
         }
  
