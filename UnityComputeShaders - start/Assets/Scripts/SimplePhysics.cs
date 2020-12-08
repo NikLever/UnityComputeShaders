@@ -67,7 +67,7 @@ public class SimplePhysics : MonoBehaviour
 
         for (int i = 0; i < numOfBalls; i++)
         {
-            ballsArray[i] = new Ball(4, 0.01f);
+            ballsArray[i] = new Ball(4, 1.0f);
         }
     }
 
@@ -103,7 +103,7 @@ public class SimplePhysics : MonoBehaviour
 
         for (int i = 0; i < iterations; i++)
         {
-            shader.Dispatch(this.kernelHandle, groupSizeX, 1, 1);
+            shader.Dispatch(kernelHandle, groupSizeX, 1, 1);
         }
 
         Graphics.DrawMeshInstancedIndirect(ballMesh, 0, ballMaterial, bounds, argsBuffer, 0, props);
