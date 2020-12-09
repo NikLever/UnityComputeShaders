@@ -1,0 +1,141 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#define CLEAR_GRID_THREAD_COUNT 8
+#define RIGID_BODY_THREAD_COUNT 8
+#define PARTICLE_THREAD_COUNT 8
+
+
+// Kernels
+
+#pragma kernel GenerateParticleValues
+#pragma kernel ClearGrid
+#pragma kernel PopulateGrid
+#pragma kernel CollisionDetectionWithGrid
+#pragma kernel ComputeMomenta
+#pragma kernel ComputePositionAndRotation
+#pragma kernel CollisionDetection
+
+struct RigidBody
+{
+	float3 position;
+	float4 quaternion;
+	float3 velocity;
+	float3 angularVelocity;
+	int particleIndex;
+	int particleCount;
+};
+
+struct Particle
+{
+	float3 position;
+	float3 velocity;
+	float3 force;
+	float3 localPosition;
+	float3 offsetPosition;
+};
+
+struct Voxel
+{
+	int4 vox1;
+	int4 vox2;
+};
+
+shared RWStructuredBuffer<RigidBody> rigidBodiesBuffer;
+shared RWStructuredBuffer<Particle> particlesBuffer;
+shared RWStructuredBuffer<Voxel> voxelGridBuffer;
+
+int particleCount;
+int particlesPerRigidBody;
+float deltaTime;
+float particleMass;
+
+//////////////////////////////
+// Generate Particle Values //
+//////////////////////////////
+// Per Rigid Body
+// Use rigidBody positions and 
+// rigidBodyQuaternions to
+// Generate
+// particle.position
+// particle.offsetPosition
+// particle.velocity
+//
+//////////////////////////////
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
+{
+
+}
+
+//////////////////////
+// Grid Generation //
+/////////////////////
+// Per Grid Cell
+// Use particle positions
+// to populate the
+// voxelGridBuffer
+int3 gridDimensions;
+float3 gridStartPosition;
+int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
+float particleDiameter;
+
+[numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
+void ClearGrid (uint3 id : SV_DispatchThreadID)
+{
+	
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void PopulateGrid (uint3 id : SV_DispatchThreadID)
+{
+	
+}
+
+/////////////////////////
+// Collision Detection //
+/////////////////////////
+// Per Particle
+// Use particle positions, grid and velocity to compute Particle force
+float springCoefficient;
+float dampingCoefficient;
+float tangentialCoefficient;
+
+float gravityCoefficient;
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
+{
+
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void CollisionDetection (uint3 id : SV_DispatchThreadID)
+{
+	
+}
+
+////////////////////////////
+// Computation Of Momenta //
+////////////////////////////
+// Per RigidBdy
+// Use particle forces to compute the force and angular force on the rigid body
+float frictionCoefficient;
+float angularFrictionCoefficient;
+float angularForceScalar;
+float linearForceScalar;
+int activeCount;
+
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void ComputeMomenta (uint3 id : SV_DispatchThreadID)
+{
+	
+}
+
+/////////////////////////////
+// Computation Of Position //
+/////////////////////////////
+// Per RigidBody
+// Use rigidBodyForce and rigidBodyTorque to compute the rigid body position and rotation.
+[numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
+void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
+{
+	
+}

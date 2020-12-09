@@ -241,14 +241,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 411714670}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67d89b88c176d4beeaeaf139994b1f9b, type: 3}
+  m_Script: {fileID: 11500000, guid: 4d9ee6a883054480a8592cf8144f966a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugWireframe: 0
-  shader: {fileID: 7200000, guid: 1dde7010a586a4bc5b942d791293614b, type: 3}
+  shader: {fileID: 7200000, guid: 14555b155e3214c838a76f270b7ad694, type: 3}
   cubeMaterial: {fileID: 2100000, guid: 0beffabe7c634451d9527998eab0a5e4, type: 2}
-  sphereMaterial: {fileID: 2100000, guid: 0d315fea00a36764c9226eb565d21116, type: 2}
-  lineMaterial: {fileID: 2100000, guid: 74605ee591d3be844b20a229dcfe0267, type: 2}
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 20, y: 20, z: 20}
@@ -264,7 +261,7 @@ MonoBehaviour:
   angularForceScalar: 100
   linearForceScalar: 100
   gridSize: {x: 20, y: 20, z: 20}
-  gridPosition: {x: 0, y: 0, z: 0}
+  gridPosition: {x: 0, y: 10, z: 0}
   useGrid: 1
   rigidBodyCount: 300
   stepsPerUpdate: 10
