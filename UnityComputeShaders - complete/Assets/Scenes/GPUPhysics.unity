@@ -241,32 +241,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 411714670}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67d89b88c176d4beeaeaf139994b1f9b, type: 3}
+  m_Script: {fileID: 11500000, guid: 988452157d690435e93707403db1a6f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugWireframe: 0
-  shader: {fileID: 7200000, guid: 1dde7010a586a4bc5b942d791293614b, type: 3}
+  shader: {fileID: 7200000, guid: 32ce76e9bcb294930a4dcca35a0c026d, type: 3}
   cubeMaterial: {fileID: 2100000, guid: 0beffabe7c634451d9527998eab0a5e4, type: 2}
-  sphereMaterial: {fileID: 2100000, guid: 0d315fea00a36764c9226eb565d21116, type: 2}
-  lineMaterial: {fileID: 2100000, guid: 74605ee591d3be844b20a229dcfe0267, type: 2}
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 20, y: 20, z: 20}
   cubeMass: 1
   scale: 1
   particlesPerEdge: 4
-  springCoefficient: 2.5
+  springCoefficient: 1
   dampingCoefficient: 0.01
   tangentialCoefficient: 0.01
-  gravityCoefficient: 0.002
+  gravityCoefficient: 0.001
   frictionCoefficient: 0.1
   angularFrictionCoefficient: 0.1
   angularForceScalar: 100
   linearForceScalar: 100
-  gridSize: {x: 20, y: 20, z: 20}
-  gridPosition: {x: 0, y: 0, z: 0}
-  useGrid: 1
-  rigidBodyCount: 300
+  rigidBodyCount: 100
   stepsPerUpdate: 10
 --- !u!4 &411714672
 Transform:

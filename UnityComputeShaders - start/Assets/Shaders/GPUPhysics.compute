@@ -7,12 +7,9 @@
 // Kernels
 
 #pragma kernel GenerateParticleValues
-#pragma kernel ClearGrid
-#pragma kernel PopulateGrid
-#pragma kernel CollisionDetectionWithGrid
+#pragma kernel CollisionDetection
 #pragma kernel ComputeMomenta
 #pragma kernel ComputePositionAndRotation
-#pragma kernel CollisionDetection
 
 struct RigidBody
 {
@@ -66,30 +63,6 @@ void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
 
 }
 
-//////////////////////
-// Grid Generation //
-/////////////////////
-// Per Grid Cell
-// Use particle positions
-// to populate the
-// voxelGridBuffer
-int3 gridDimensions;
-float3 gridStartPosition;
-int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
-float particleDiameter;
-
-[numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
-void ClearGrid (uint3 id : SV_DispatchThreadID)
-{
-	
-}
-
-[numthreads(PARTICLE_THREAD_COUNT,1,1)]
-void PopulateGrid (uint3 id : SV_DispatchThreadID)
-{
-	
-}
-
 /////////////////////////
 // Collision Detection //
 /////////////////////////
@@ -98,13 +71,6 @@ void PopulateGrid (uint3 id : SV_DispatchThreadID)
 float springCoefficient;
 float dampingCoefficient;
 float tangentialCoefficient;
-
-float gravityCoefficient;
-[numthreads(PARTICLE_THREAD_COUNT,1,1)]
-void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
-{
-
-}
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void CollisionDetection (uint3 id : SV_DispatchThreadID)
