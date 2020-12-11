@@ -73,6 +73,7 @@ public class GPUPhysics : MonoBehaviour {
 
 	RigidBody[] rigidBodiesArray;
 	Particle[] particlesArray;
+	uint[] argsArray = new uint[]{0,0,0,0,0};
 
 	ComputeBuffer rigidBodiesBuffer;
 	ComputeBuffer particlesBuffer;
@@ -108,8 +109,7 @@ public class GPUPhysics : MonoBehaviour {
 
 	void InitArrays()
     {
-		int particlesPerEdgeMinusTwo = particlesPerEdge-2;
-		particlesPerBody = particlesPerEdge * particlesPerEdge * particlesPerEdge - particlesPerEdgeMinusTwo*particlesPerEdgeMinusTwo*particlesPerEdgeMinusTwo;
+		particlesPerBody = particlesPerEdge * particlesPerEdge * particlesPerEdge;
 
 		rigidBodiesArray = new RigidBody[rigidBodyCount];
 		particlesArray = new Particle[rigidBodyCount * particlesPerBody];
@@ -132,36 +132,27 @@ public class GPUPhysics : MonoBehaviour {
     {
     	particleDiameter = scale / particlesPerEdge;
     	
-		int count = rigidBodyCount * particlesPerBody;
-
-		particlesArray = new Particle[count];
-
-		// initialize buffers
 		// initial local particle positions within a rigidbody
 		int index = 0;
-		float centerer = scale * -0.5f + particleDiameter * 0.5f;
+		float centerer = (particleDiameter - scale) * 0.5f;
 		Vector3 centeringOffset = new Vector3(centerer, centerer, centerer);
 
-		for (int xIter = 0; xIter < particlesPerEdge; xIter++)
+		for (int x = 0; x < particlesPerEdge; x++)
 		{
-			for (int yIter = 0; yIter < particlesPerEdge; yIter++)
+			for (int y = 0; y < particlesPerEdge; y++)
 			{
-				for (int zIter = 0; zIter < particlesPerEdge; zIter++)
+				for (int z = 0; z < particlesPerEdge; z++)
 				{
-					if (xIter == 0 || xIter == (particlesPerEdge - 1) || yIter == 0 || yIter == (particlesPerEdge - 1) || zIter == 0 || zIter == (particlesPerEdge - 1))
+					Vector3 pos = centeringOffset + new Vector3(x, y, z) * particleDiameter;
+					for (int i = 0; i < rigidBodyCount; i++)
 					{
-						Vector3 pos = centeringOffset + new Vector3(xIter * particleDiameter, yIter * particleDiameter, zIter * particleDiameter);
-						for (int i = 0; i < rigidBodyCount; i++)
-						{
-							RigidBody body = rigidBodiesArray[i];
-							particlesArray[body.particleIndex + index] = new Particle(pos);
-						}
-						index++;
+						RigidBody body = rigidBodiesArray[i];
+						particlesArray[body.particleIndex + index] = new Particle(pos);
 					}
+					index++;
 				}
 			}
 		}
-
 		Debug.Log("particleCount: " + rigidBodyCount * particlesPerBody);
 	}
 
@@ -190,9 +181,9 @@ public class GPUPhysics : MonoBehaviour {
 		shader.SetFloat("angularForceScalar", angularForceScalar);
 		shader.SetFloat("linearForceScalar", linearForceScalar);
 		shader.SetFloat("particleMass", cubeMass / particlesPerBody);
-		shader.SetInt("particleCount", rigidBodyCount * particlesPerBody);
-
 		int particleCount = rigidBodyCount * particlesPerBody;
+		shader.SetInt("particleCount", particleCount);
+
 		// Get Kernels
 		kernelGenerateParticleValues = shader.FindKernel("GenerateParticleValues");
 		kernelCollisionDetection = shader.FindKernel("CollisionDetection");
@@ -224,8 +215,8 @@ public class GPUPhysics : MonoBehaviour {
 		// Setup Indirect Renderer
 		cubeMaterial.SetBuffer("rigidBodiesBuffer", rigidBodiesBuffer);
 
-		uint[] args = new uint[] { cubeMesh.GetIndexCount(0), (uint)1, 0, 0, 0 };
-		argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+		argsArray[0] = cubeMesh.GetIndexCount(0);
+		argsBuffer = new ComputeBuffer(1, argsArray.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
 		argsBuffer.SetData(args);
 	}
 
@@ -234,8 +225,8 @@ public class GPUPhysics : MonoBehaviour {
 			activeCount++;
 			frameCounter = 0;
 			shader.SetInt("activeCount", activeCount);
-			uint[] args = new uint[] { cubeMesh.GetIndexCount(0), (uint)activeCount, 0, 0, 0 };
-			argsBuffer.SetData(args);
+			argsArray[1] = activeCount;
+			argsBuffer.SetData(argsArray);
 		}
 
 		float dt = Time.deltaTime/stepsPerUpdate;
