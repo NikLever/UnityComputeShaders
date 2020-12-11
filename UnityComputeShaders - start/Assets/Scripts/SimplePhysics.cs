@@ -86,7 +86,7 @@ public class SimplePhysics : MonoBehaviour
         }
         argsBuffer.SetData(args);
 
-        shader.SetBuffer(this.kernelHandle, "ballsBuffer", ballsBuffer);
+        shader.SetBuffer(kernelHandle, "ballsBuffer", ballsBuffer);
         shader.SetInt("ballsCount", numOfBalls);
         shader.SetVector("limitsXZ", new Vector4(-2.5f+radius, 2.5f-radius, -2.5f+radius, 2.5f-radius));
         shader.SetFloat("floorY", -2.5f+radius);
@@ -103,7 +103,7 @@ public class SimplePhysics : MonoBehaviour
 
         for (int i = 0; i < iterations; i++)
         {
-            shader.Dispatch(this.kernelHandle, groupSizeX, 1, 1);
+            shader.Dispatch(kernelHandle, groupSizeX, 1, 1);
         }
 
         Graphics.DrawMeshInstancedIndirect(ballMesh, 0, ballMaterial, bounds, argsBuffer, 0, props);
