@@ -67,7 +67,7 @@ public class SimplePhysics : MonoBehaviour
 
         for (int i = 0; i < numOfBalls; i++)
         {
-            ballsArray[i] = new Ball(4, 0.01f);
+            ballsArray[i] = new Ball(4, 1.0f);
         }
     }
 

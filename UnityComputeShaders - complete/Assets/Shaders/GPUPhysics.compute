@@ -18,28 +18,17 @@ inline float3 quat_mul(float4 q, float3 v)
 // Per Rigid Body	0
 #pragma kernel GenerateParticleValues
 
-// Per Grid Cell	1
-#pragma kernel ClearGrid
-
-// Per Particle		2
-#pragma kernel PopulateGrid
-
-// Per Particle		3
-#pragma kernel CollisionDetectionWithGrid
-
-// Per Rigid Body	4
-#pragma kernel ComputeMomenta
-
-// Per Rigid Body	5
-#pragma kernel ComputePositionAndRotation
-
-// Per Particle		6
+// Per Particle		1
 #pragma kernel CollisionDetection
 
+// Per Rigid Body	2
+#pragma kernel ComputeMomenta
+
+// Per Rigid Body	3
+#pragma kernel ComputePositionAndRotation
+
+
 // Constants
-// gridStartPosition				(float3) // lower left backward corner
-// gridDimensions 					(int3)
-// gridMax							(int) gridDimensions.x * gridDimensions.y * gridDimensions.z * 4
 // particleDiameter 				(float)
 // springCoefficient 				(float) (negative) (Equation 10)
 // dampingCoefficient 				(float) (Equation 11)
@@ -73,7 +62,6 @@ struct Voxel
 
 shared RWStructuredBuffer<RigidBody> rigidBodiesBuffer;
 shared RWStructuredBuffer<Particle> particlesBuffer;
-shared RWStructuredBuffer<Voxel> voxelGridBuffer;
 
 int particleCount;
 int particlesPerRigidBody;
@@ -108,72 +96,7 @@ void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
     }
 }
 
-
-//////////////////////
-// Grid Generation //
-/////////////////////
-// Per Grid Cell
-// Use particlePositions
-// to populate the
-// voxelGridBuffer
-// Input
-int3 gridDimensions;
-float3 gridStartPosition;
-int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
 float particleDiameter;
-
-[numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
-void ClearGrid (uint3 id : SV_DispatchThreadID)
-{
-	Voxel voxel = voxelGridBuffer[id.x];
-	voxel.vox1.x = voxel.vox1.y = voxel.vox1.z = voxel.vox1.w = -1;
-	voxel.vox2.x = voxel.vox2.y = voxel.vox2.z = voxel.vox2.w = -1;
-	voxelGridBuffer[id.x] = voxel;
-}
-
-// Returns the grid index for particle p
-int GetParticleGridIndex(int id) {
-	int3 gridLocation = (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
-	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
-}
-
-// Returns the grid location for particle p
-int3 GetParticleGridLocation(int id) {
-	return (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
-}
-
-// Converts a grid location to a grid index
-int GetParticleGridIndex(int x, int y, int z) {
-	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
-}
-
-[numthreads(PARTICLE_THREAD_COUNT,1,1)]
-void PopulateGrid (uint3 id : SV_DispatchThreadID)
-{
-	int index = GetParticleGridIndex(id.x);
-	// clamp gridIndex
-	if (index < gridMax && index >= 0){
-		Voxel voxel = voxelGridBuffer[index];
-		if (voxel.vox1.x==-1){
-			voxel.vox1.x = id.x;
-		}else if (voxel.vox1.y==-1){
-			voxel.vox1.y = id.x;
-		}else if (voxel.vox1.z==-1){
-			voxel.vox1.z = id.x;
-		}else if (voxel.vox1.w==-1){
-			voxel.vox1.w = id.x;
-		}else if (voxel.vox2.x==-1){
-			voxel.vox2.x = id.x;
-		}else if (voxel.vox2.y==-1){
-			voxel.vox2.y = id.x;
-		}else if (voxel.vox2.z==-1){
-			voxel.vox2.z = id.x;
-		}else if (voxel.vox2.w==-1){
-			voxel.vox2.w = id.x;
-		}
-		voxelGridBuffer[index] = voxel;
-	}
-}
 
 /////////////////////////
 // Collision Detection //
@@ -198,10 +121,14 @@ float3 CollisionReaction(int j_id, int i_id)
 	if (relativePositionMagnitude < particleDiameter)
 	{
 		float3 relativePositionNormalized = relativePosition / relativePositionMagnitude;
+
 		// repulsive force (Equation 10)
 		float3 repulsiveForce = -springCoefficient * (particleDiameter - relativePositionMagnitude) * relativePositionNormalized;
-		
 		// damping force (Equation 11)
+		// https://www2.msm.ctw.utwente.nl/sluding/PAPERS/luding_alert2008.pdf 
+		// says that the damping force acts along the normal....
+		// not sure whether relativeVelocity is relative to particle i's position or particle i's velocity
+		// using velocity here
 		float3 relativeVelocity = particleJ.velocity - particleI.velocity; // not sure if correct
 		float3 dampingForce = dampingCoefficient * relativeVelocity;
 
@@ -219,9 +146,9 @@ float3 CollisionReactionWithGround(int id) {
 	Particle particle = particlesBuffer[id];
 
 	float3 groundParticlePosition = particle.position;
+	groundParticlePosition.y = -particleDiameter*0.5;
 	float radius = particleDiameter*0.5;
 	groundParticlePosition.y = min(-radius, particle.position.y-radius);
-
 
 	float3 relativePosition = groundParticlePosition - particle.position; // position of j relative to i
 	float relativePositionMagnitude = length(relativePosition);
@@ -252,68 +179,7 @@ float3 CollisionReactionWithGround(int id) {
 	return float3(0.0f,0.0f,0.0f);
 }
 
-// checks cell x,y,z for collision with i, calls CollisionReaction if so
-float3 ForceFromGridCell(int i, int x, int y, int z) {
-	float3 force = float3(0,0,0);
-	if (x > -1 && y > -1 && z > -1 && x < gridDimensions.x && y < gridDimensions.y && z < gridDimensions.z) {
-		int index = GetParticleGridIndex(x,y,z);
-		if (index < gridMax) {
-			Voxel voxel = voxelGridBuffer[index];
-			int j = voxel.vox1.x;
-			if (j > -1 && j != i)
-				force += CollisionReaction(j, i);
-
-			j = voxel.vox1.y;
-			if (j > -1 && j != i)
-				force += CollisionReaction(j, i);
-
-			j = voxel.vox1.z;
-			if (j > -1 && j != i)
-				force += CollisionReaction(j, i);
-			
-			j = voxel.vox1.w;
-			if (j > -1  && j != i)
-				force += CollisionReaction(j, i);
-
-			j = voxel.vox2.x;
-			if (j > -1 && j != i)
-				force += CollisionReaction(j, i);
-			j = voxel.vox2.y;
-			if (j > -1 && j != i)
-				force += CollisionReaction(j, i);
-
-			j = voxel.vox2.z;
-			if (j > -1 && j != i)
-				force += CollisionReaction(j, i);
-			
-			j = voxel.vox2.w;
-			if (j > -1  && j != i)
-				force += CollisionReaction(j, i);
-		}
-	}
-	return force;
-}
-
 float gravityCoefficient;
-[numthreads(PARTICLE_THREAD_COUNT,1,1)]
-void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
-{
-	float3 force = 0;
-	int3 loc = GetParticleGridLocation(id.x);
-
-	for(int x = loc.x-1; x<=loc.x+1; x++){
-		for(int y = loc.y-1; y<=loc.y+1; y++){
-			for(int z = loc.z-1; z<=loc.z+1; z++){
-				force += ForceFromGridCell(id.x, x, y, z);
-			}
-		}	
-    }
-
-	force.y -= gravityCoefficient;
-	force += CollisionReactionWithGround(id.x);
-
-	particlesBuffer[id.x].force = force;
-}
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void CollisionDetection (uint3 id : SV_DispatchThreadID)
@@ -321,7 +187,7 @@ void CollisionDetection (uint3 id : SV_DispatchThreadID)
 	float3 force = 0;
 
 	for(int i=0; i<particleCount; i++){
-		if (i==id.x) continue;
+		if (i==(int)id.x) continue;
 		force += CollisionReaction(i, id.x);
     }
 
@@ -345,7 +211,7 @@ int activeCount;
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 {
-	if (id.x<activeCount){
+	if (id.x<(uint)activeCount){
 		float3 relativePosition 	= float3(0,0,0);
 		float3 linearForce 			= float3(0,0,0);
 		float3 angularForce 		= float3(0,0,0);
@@ -388,7 +254,7 @@ void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
 {
-	if (id.x<activeCount){
+	if (id.x<(uint)activeCount){
 		RigidBody body = rigidBodiesBuffer[id.x];
 		body.position += body.velocity * deltaTime;
 

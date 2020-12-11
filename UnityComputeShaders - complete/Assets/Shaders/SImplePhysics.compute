@@ -58,7 +58,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 	float3 relativeVelocity;
 
 	for ( int i = id.x + 1; i < ballsCount; i ++ ) {
-
 		Ball ball2 = ballsBuffer[ (uint)i ];
 
 		normal = ball.position - ball2.position;
@@ -70,8 +69,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 			normal *= 0.5 * distance - radius;
 
 			ball.position -= normal;
-			ball2.position += normal;
-
+			
 			normal = normalize(normal);
 
 			relativeVelocity = ball.velocity - ball2.velocity;
@@ -79,8 +77,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 			normal *= dot( relativeVelocity, normal );
 
 			ball.velocity -= normal;
-			ball2.velocity += normal;
-
 		}
 
 	}
