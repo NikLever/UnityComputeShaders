@@ -217,7 +217,7 @@ public class GPUPhysics : MonoBehaviour {
 
 		argsArray[0] = cubeMesh.GetIndexCount(0);
 		argsBuffer = new ComputeBuffer(1, argsArray.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-		argsBuffer.SetData(args);
+		argsBuffer.SetData(argsArray);
 	}
 
 	void Update() {
@@ -225,7 +225,7 @@ public class GPUPhysics : MonoBehaviour {
 			activeCount++;
 			frameCounter = 0;
 			shader.SetInt("activeCount", activeCount);
-			argsArray[1] = activeCount;
+			argsArray[1] = (uint)activeCount;
 			argsBuffer.SetData(argsArray);
 		}
 

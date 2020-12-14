@@ -111,11 +111,24 @@ float tangentialCoefficient;
 float3 CollisionReaction(int j_id, int i_id)
 {
 	// the force on particle i after colliding with particle j is modelled as follows
-
-	Particle particleJ = particlesBuffer[j_id];
+	float3 force = 0;
+	float3 relativePosition;
+	float3 particleJVelocity;
+	
 	Particle particleI = particlesBuffer[i_id];
 
-	float3 relativePosition = particleJ.position - particleI.position; // position of j relative to i
+	if (j_id<0){
+		float3 groundParticlePosition = particleI.position;
+		groundParticlePosition.y = -particleDiameter*0.5;
+		float radius = particleDiameter*0.5;
+		groundParticlePosition.y = min(-radius, particleI.position.y-radius);
+		relativePosition = groundParticlePosition - particleI.position;
+		particleJVelocity = 0;
+	}else{
+		Particle particleJ = particlesBuffer[j_id];
+		particleJVelocity = particleJ.velocity;
+		relativePosition = particleJ.position - particleI.position; // position of j relative to i
+	}
 	float relativePositionMagnitude = length(relativePosition);
 
 	if (relativePositionMagnitude < particleDiameter)
@@ -129,20 +142,22 @@ float3 CollisionReaction(int j_id, int i_id)
 		// says that the damping force acts along the normal....
 		// not sure whether relativeVelocity is relative to particle i's position or particle i's velocity
 		// using velocity here
-		float3 relativeVelocity = particleJ.velocity - particleI.velocity; // not sure if correct
+		float3 relativeVelocity = particleJVelocity - particleI.velocity; // not sure if correct
 		float3 dampingForce = dampingCoefficient * relativeVelocity;
 
 		// tangential force (Equation 12)
 		float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
 		float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
 
-		return repulsiveForce + dampingForce + tangentialForce;
+		force = repulsiveForce + dampingForce + tangentialForce;
 	}
 
-	return float3(0,0,0);
+	return force;
 }
 
 float3 CollisionReactionWithGround(int id) {
+	float3 force = 0;
+	
 	Particle particle = particlesBuffer[id];
 
 	float3 groundParticlePosition = particle.position;
@@ -172,7 +187,7 @@ float3 CollisionReactionWithGround(int id) {
 		float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
 		float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
 
-		return repulsiveForce + dampingForce + tangentialForce;
+		force = repulsiveForce + dampingForce + tangentialForce;
 
 	}
 
@@ -186,13 +201,13 @@ void CollisionDetection (uint3 id : SV_DispatchThreadID)
 {
 	float3 force = 0;
 
-	for(int i=0; i<particleCount; i++){
+	for(int i=-1; i<particleCount; i++){
 		if (i==(int)id.x) continue;
 		force += CollisionReaction(i, id.x);
     }
 
 	force.y -= gravityCoefficient;
-	force += CollisionReactionWithGround(id.x);
+	//force += CollisionReactionWithGround(id.x);
 
 	particlesBuffer[id.x].force = force;
 }

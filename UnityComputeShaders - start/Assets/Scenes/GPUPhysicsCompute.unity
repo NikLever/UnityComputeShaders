@@ -241,10 +241,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 411714670}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 988452157d690435e93707403db1a6f9, type: 3}
+  m_Script: {fileID: 11500000, guid: b6d98a4b93caf4097baa8c10f451198b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 32ce76e9bcb294930a4dcca35a0c026d, type: 3}
+  shader: {fileID: 7200000, guid: 14555b155e3214c838a76f270b7ad694, type: 3}
   cubeMaterial: {fileID: 2100000, guid: 0beffabe7c634451d9527998eab0a5e4, type: 2}
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
@@ -252,7 +252,7 @@ MonoBehaviour:
   cubeMass: 1
   scale: 1
   particlesPerEdge: 4
-  springCoefficient: 1
+  springCoefficient: 2.5
   dampingCoefficient: 0.01
   tangentialCoefficient: 0.01
   gravityCoefficient: 0.002

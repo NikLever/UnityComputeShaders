@@ -72,6 +72,13 @@ float springCoefficient;
 float dampingCoefficient;
 float tangentialCoefficient;
 
+float3 CollisionReaction(int j_id, int i_id)
+{
+	float3 force = 0;
+
+	return force;
+}
+
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void CollisionDetection (uint3 id : SV_DispatchThreadID)
 {
@@ -99,7 +106,7 @@ void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 // Computation Of Position //
 /////////////////////////////
 // Per RigidBody
-// Use rigidBodyForce and rigidBodyTorque to compute the rigid body position and rotation.
+// Use rigidBodyForce and rigidBodyTorque to compute the rigid body position and rotation. 
 [numthreads(RIGID_BODY_THREAD_COUNT,1,1)]
 void ComputePositionAndRotation (uint3 id : SV_DispatchThreadID)
 {
