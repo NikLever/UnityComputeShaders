@@ -86,7 +86,7 @@ public class SimplePhysics : MonoBehaviour
         }
         argsBuffer.SetData(args);
 
-        shader.SetBuffer(this.kernelHandle, "ballsBuffer", ballsBuffer);
+        shader.SetBuffer(kernelHandle, "ballsBuffer", ballsBuffer);
         shader.SetInt("ballsCount", numOfBalls);
         shader.SetVector("limitsXZ", new Vector4(-2.5f+radius, 2.5f-radius, -2.5f+radius, 2.5f-radius));
         shader.SetFloat("floorY", -2.5f+radius);
