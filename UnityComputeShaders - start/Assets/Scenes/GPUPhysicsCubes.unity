@@ -265,8 +265,8 @@ MonoBehaviour:
   linearForceScalar: 100
   gridSize: {x: 20, y: 20, z: 20}
   gridPosition: {x: 0, y: 10, z: 0}
-  useGrid: 1
-  rigidBodyCount: 300
+  useGrid: 0
+  rigidBodyCount: 10
   stepsPerUpdate: 10
 --- !u!4 &411714672
 Transform:

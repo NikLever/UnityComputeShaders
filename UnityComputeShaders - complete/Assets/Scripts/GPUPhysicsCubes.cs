@@ -123,10 +123,6 @@ public class GPUPhysicsCubes : MonoBehaviour {
 
 		cubeScale = new Vector3(scale, scale, scale);
 
-		int particlesPerEdgeMinusTwo = particlesPerEdge-2;
-		particlesPerBody = particlesPerEdge * particlesPerEdge * particlesPerEdge - particlesPerEdgeMinusTwo*particlesPerEdgeMinusTwo*particlesPerEdgeMinusTwo;
-		particleDiameter = scale / particlesPerEdge;
-
 		InitArrays();
 
 		InitRigidBodies();
@@ -143,6 +139,7 @@ public class GPUPhysicsCubes : MonoBehaviour {
 
 	void InitArrays()
     {
+    	particlesPerBody = particlesPerEdge * particlesPerEdge * particlesPerEdge ;
 		rigidBodiesArray = new RigidBody[rigidBodyCount];
 		particlesArray = new Particle[rigidBodyCount * particlesPerBody];
 		voxelGridArray = new int[gridSize.x * gridSize.y * gridSize.z * 8];
@@ -163,6 +160,7 @@ public class GPUPhysicsCubes : MonoBehaviour {
 
 	void InitParticles()
     {
+    	particleDiameter = scale / particlesPerEdge;
 		int count = rigidBodyCount * particlesPerBody;
 
 		particlesArray = new Particle[count];
@@ -171,24 +169,21 @@ public class GPUPhysicsCubes : MonoBehaviour {
 		// initial local particle positions within a rigidbody
 		int index = 0;
 		float centerer = scale * -0.5f + particleDiameter * 0.5f;
-		Vector3 centeringOffset = new Vector3(centerer, centerer, centerer);
+		Vector3 offset = new Vector3(centerer, centerer, centerer);
 
-		for (int xIter = 0; xIter < particlesPerEdge; xIter++)
+		for (int x = 0; x < particlesPerEdge; x++)
 		{
-			for (int yIter = 0; yIter < particlesPerEdge; yIter++)
+			for (int y = 0; y < particlesPerEdge; y++)
 			{
-				for (int zIter = 0; zIter < particlesPerEdge; zIter++)
+				for (int z = 0; z < particlesPerEdge; z++)
 				{
-					if (xIter == 0 || xIter == (particlesPerEdge - 1) || yIter == 0 || yIter == (particlesPerEdge - 1) || zIter == 0 || zIter == (particlesPerEdge - 1))
+					Vector3 pos = offset + new Vector3(x,y,z) * particleDiameter;
+					for (int i = 0; i < rigidBodyCount; i++)
 					{
-						Vector3 pos = centeringOffset + new Vector3(xIter * particleDiameter, yIter * particleDiameter, zIter * particleDiameter);
-						for (int i = 0; i < rigidBodyCount; i++)
-						{
-							RigidBody body = rigidBodiesArray[i];
-							particlesArray[body.particleIndex + index] = new Particle(pos);
-						}
-						index++;
+						RigidBody body = rigidBodiesArray[i];
+						particlesArray[body.particleIndex + index] = new Particle(pos);
 					}
+					index++;
 				}
 			}
 		}

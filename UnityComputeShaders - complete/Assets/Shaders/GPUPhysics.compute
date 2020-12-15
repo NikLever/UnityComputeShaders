@@ -155,45 +155,6 @@ float3 CollisionReaction(int j_id, int i_id)
 	return force;
 }
 
-float3 CollisionReactionWithGround(int id) {
-	float3 force = 0;
-	
-	Particle particle = particlesBuffer[id];
-
-	float3 groundParticlePosition = particle.position;
-	groundParticlePosition.y = -particleDiameter*0.5;
-	float radius = particleDiameter*0.5;
-	groundParticlePosition.y = min(-radius, particle.position.y-radius);
-
-	float3 relativePosition = groundParticlePosition - particle.position; // position of j relative to i
-	float relativePositionMagnitude = length(relativePosition);
-
-	if (relativePositionMagnitude < particleDiameter)
-	{
-		float3 relativePositionNormalized = relativePosition / relativePositionMagnitude;
-
-		// repulsive force (Equation 10)
-		float3 repulsiveForce = -springCoefficient * (particleDiameter - relativePositionMagnitude) * relativePositionNormalized;
-		// damping force (Equation 11)
-		// https://www2.msm.ctw.utwente.nl/sluding/PAPERS/luding_alert2008.pdf 
-		// says that the damping force acts along the normal....
-		// not sure whether relativeVelocity is relative to particle i's position or particle i's velocity
-		// using velocity here
-
-		float3 relativeVelocity = float3(0.0f,0.0f,0.0f) - particle.velocity; // not sure if correct
-		float3 dampingForce = dampingCoefficient * relativeVelocity;
-
-		// tangential force (Equation 12)
-		float3 tangentialVelocity = relativeVelocity - (dot(relativeVelocity, relativePositionNormalized) * relativePositionNormalized);
-		float3 tangentialForce = tangentialCoefficient * tangentialVelocity;
-
-		force = repulsiveForce + dampingForce + tangentialForce;
-
-	}
-
-	return float3(0.0f,0.0f,0.0f);
-}
-
 float gravityCoefficient;
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
@@ -207,8 +168,7 @@ void CollisionDetection (uint3 id : SV_DispatchThreadID)
     }
 
 	force.y -= gravityCoefficient;
-	//force += CollisionReactionWithGround(id.x);
-
+	
 	particlesBuffer[id.x].force = force;
 }
 
