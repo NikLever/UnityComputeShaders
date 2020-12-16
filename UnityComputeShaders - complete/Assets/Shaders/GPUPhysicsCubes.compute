@@ -118,7 +118,7 @@ void GenerateParticleValues (uint3 id : SV_DispatchThreadID)
 // voxelGridBuffer
 // Input
 int3 gridDimensions;
-float3 gridStartPosition;
+float4 gridStartPosition;
 int gridMax; // gridDimensions.x * gridDimensions.y * gridDimensions.z
 float particleDiameter;
 
@@ -133,13 +133,13 @@ void ClearGrid (uint3 id : SV_DispatchThreadID)
 
 // Returns the grid index for particle p
 int GetParticleGridIndex(int id) {
-	int3 gridLocation = (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
+	int3 gridLocation = (particlesBuffer[id].position - gridStartPosition.xyz) / particleDiameter;
 	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
 }
 
 // Returns the grid location for particle p
 int3 GetParticleGridLocation(int id) {
-	return (particlesBuffer[id].position - gridStartPosition) / particleDiameter;
+	return (particlesBuffer[id].position - gridStartPosition.xyz) / particleDiameter;
 }
 
 // Converts a grid location to a grid index
@@ -322,18 +322,16 @@ int activeCount;
 void ComputeMomenta (uint3 id : SV_DispatchThreadID)
 {
 	if (id.x<(uint)activeCount){
-		float3 relativePosition 	= float3(0,0,0);
-		float3 linearForce 			= float3(0,0,0);
-		float3 angularForce 		= float3(0,0,0);
+		float3 linearForce 			= 0;
+		float3 angularForce 		= 0;
 
 		RigidBody body = rigidBodiesBuffer[id.x];
 
 		for (int i = 0; i < body.particleCount; i++) 
 		{
 			Particle particle = particlesBuffer[body.particleIndex + i];
-			relativePosition  = particle.offsetPosition;
 			linearForce 	  += particle.force;
-			angularForce 	  += cross(relativePosition, particle.force);	
+			angularForce 	  += cross(particle.offsetPosition, particle.force);	
 		}
 
 		float threshold = 1.0 / pow(10.0,6);
