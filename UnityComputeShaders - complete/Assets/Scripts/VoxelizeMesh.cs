@@ -6,6 +6,7 @@ public class VoxelizeMesh : MonoBehaviour
 {
     public Mesh meshToVoxelize;
     public int yParticleCount = 4;
+    public int layer = 9;
 
     float particleSize;
 
@@ -45,22 +46,22 @@ public class VoxelizeMesh : MonoBehaviour
         Vector3 counts = mesh.bounds.extents / radius;
         Vector3Int particleCounts = new Vector3Int((int)counts.x, (int)counts.y, (int)counts.z);
 
-        Debug.Log("minExtents before " + minExtents);
+        //Debug.Log("minExtents before " + minExtents);
         if ((particleCounts.x % 2) == 0)
         {
             minExtents.x += (mesh.bounds.extents.x - (float)particleCounts.x * radius);
         }
-        Debug.Log("minExtents after " + minExtents);
+        //Debug.Log("minExtents after " + minExtents);
         float offsetZ = 0;
         if ((particleCounts.z % 2) == 0)
         {
             offsetZ += (mesh.bounds.extents.z - (float)particleCounts.z * radius);
         }
-        Debug.Log("offsetZ " + offsetZ);
+        //Debug.Log("offsetZ " + offsetZ);
 
         rayOffset.y += radius;
         Vector3 scale = Vector3.one * particleSize;
-        int layerMask = 1 << 9;//Voxelize mesh is in layer 9
+        int layerMask = 1 << layer;//Voxelize mesh is in layer 9 by default
 
         while(rayOffset.y < maxExtents.y)
         {
