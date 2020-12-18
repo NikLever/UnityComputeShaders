@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: InstancedGrass
-  m_Shader: {fileID: 4800000, guid: 7b5a7217b203c44a899169c7ab41de28, type: 3}
+  m_Name: InstancedGrassClumps
+  m_Shader: {fileID: 4800000, guid: 33edd2fbf02404c92b518d6e686f468a, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1

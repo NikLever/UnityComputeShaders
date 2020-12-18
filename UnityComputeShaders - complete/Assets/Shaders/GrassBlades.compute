@@ -1,0 +1,25 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#define THREADGROUPSIZE 128 
+#pragma kernel BendGrass
+
+struct GrassBlade
+{
+    float3 position;
+    float bend;
+    float noise;
+    float fade;
+};
+RWStructuredBuffer<GrassBlade> bladesBuffer;
+float time;
+float maxBend;
+float speed;
+
+[numthreads(THREADGROUPSIZE,1,1)]
+void BendGrass (uint3 id : SV_DispatchThreadID)
+{
+    GrassBlade blade = bladesBuffer[id.x];
+
+    blade.bend = sin(time*speed) * maxBend * blade.noise;
+
+    bladesBuffer[id.x] = blade;
+}
