@@ -74,6 +74,7 @@ public class GPUPhysics : MonoBehaviour {
 
 	RigidBody[] rigidBodiesArray;
 	Particle[] particlesArray;
+	uint[] argsArray;
 	
 	ComputeBuffer rigidBodiesBuffer;
 	ComputeBuffer particlesBuffer;
