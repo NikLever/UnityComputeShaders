@@ -143,8 +143,11 @@ int3 GetParticleGridLocation(int id) {
 }
 
 // Converts a grid location to a grid index
-int GetParticleGridIndex(int x, int y, int z) {
+int GetGridIndex(int x, int y, int z) {
 	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
+}
+int GetGridIndex(int3 loc) {
+	return loc.x + (gridDimensions.x * loc.y) + (gridDimensions.x * gridDimensions.y * loc.z);
 }
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
@@ -235,10 +238,10 @@ float3 CollisionReaction(int j_id, int i_id)
 }
 
 // checks cell x,y,z for collision with i, calls CollisionReaction if so
-float3 ForceFromGridCell(int i, int x, int y, int z) {
+float3 ForceFromGridCell(int i, int3 loc) {
 	float3 force = 0;
 	if (x > -1 && y > -1 && z > -1 && x < gridDimensions.x && y < gridDimensions.y && z < gridDimensions.z) {
-		int index = GetParticleGridIndex(x,y,z);
+		int index = GetGridIndex(loc);
 		if (index < gridMax) {
 			Voxel voxel = voxelGridBuffer[index];
 			int j = voxel.vox1.x;
@@ -282,7 +285,7 @@ void CollisionDetectionWithGrid (uint3 id : SV_DispatchThreadID)
 	for(int x = loc.x-1; x<=loc.x+1; x++){
 		for(int y = loc.y-1; y<=loc.y+1; y++){
 			for(int z = loc.z-1; z<=loc.z+1; z++){
-				force += ForceFromGridCell(id.x, x, y, z);
+				force += ForceFromGridCell(id.x, loc);
 			}
 		}	
     }

@@ -125,10 +125,7 @@ float particleDiameter;
 [numthreads(CLEAR_GRID_THREAD_COUNT,1,1)]
 void ClearGrid (uint3 id : SV_DispatchThreadID)
 {
-	Voxel voxel = voxelGridBuffer[id.x];
-	voxel.vox1.x = voxel.vox1.y = voxel.vox1.z = voxel.vox1.w = -1;
-	voxel.vox2.x = voxel.vox2.y = voxel.vox2.z = voxel.vox2.w = -1;
-	voxelGridBuffer[id.x] = voxel;
+	
 }
 
 // Returns the grid index for particle p
@@ -143,37 +140,17 @@ int3 GetParticleGridLocation(int id) {
 }
 
 // Converts a grid location to a grid index
-int GetParticleGridIndex(int x, int y, int z) {
+int GetGridIndex(int x, int y, int z) {
 	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
+}
+int GetGridIndex(int3 loc) {
+	return loc.x + (gridDimensions.x * loc.y) + (gridDimensions.x * gridDimensions.y * loc.z);
 }
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void PopulateGrid (uint3 id : SV_DispatchThreadID)
 {
-	int index = GetParticleGridIndex(id.x);
-	// clamp gridIndex
-	if (index < gridMax && index >= 0)
-	{
-		Voxel voxel = voxelGridBuffer[index];
-		if (voxel.vox1.x==-1){
-			voxel.vox1.x = id.x;
-        }else if (voxel.vox1.y==-1){
-			voxel.vox1.y = id.x;
-        }else if (voxel.vox1.z==-1){
-			voxel.vox1.z = id.x;
-        }else if (voxel.vox1.w==-1){
-			voxel.vox1.w = id.x;
-        }else if (voxel.vox2.x==-1){
-			voxel.vox2.x = id.x;
-        }else if (voxel.vox2.y==-1){
-			voxel.vox2.y = id.x;
-        }else if (voxel.vox2.z==-1){
-			voxel.vox2.z = id.x;
-        }else if (voxel.vox2.w==-1){
-			voxel.vox2.w = id.x;
-        }
-		voxelGridBuffer[index] = voxel;
-	}
+	
 }
 
 /////////////////////////
@@ -231,6 +208,7 @@ float3 CollisionReaction(int j_id, int i_id)
 // checks cell x,y,z for collision with i, calls CollisionReaction if so
 float3 ForceFromGridCell(int i, int x, int y, int z) {
 	float3 force = 0;
+	
 	return force;
 }
 
