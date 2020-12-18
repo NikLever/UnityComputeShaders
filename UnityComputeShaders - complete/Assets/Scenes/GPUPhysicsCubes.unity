@@ -251,11 +251,11 @@ MonoBehaviour:
   lineMaterial: {fileID: 2100000, guid: 74605ee591d3be844b20a229dcfe0267, type: 2}
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 20, y: 20, z: 20}
+    m_Extent: {x: 30, y: 30, z: 30}
   cubeMass: 1
   scale: 1
   particlesPerEdge: 4
-  springCoefficient: 2.5
+  springCoefficient: 0.5
   dampingCoefficient: 0.01
   tangentialCoefficient: 0.01
   gravityCoefficient: 0.002
@@ -263,7 +263,7 @@ MonoBehaviour:
   angularFrictionCoefficient: 0.1
   angularForceScalar: 100
   linearForceScalar: 100
-  gridSize: {x: 25, y: 25, z: 25}
+  gridSize: {x: 50, y: 25, z: 50}
   gridPosition: {x: 0, y: 5, z: 0}
   useGrid: 1
   rigidBodyCount: 300
