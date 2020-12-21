@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class GPUPhysicsPawns : MonoBehaviour {
+public class Challenge5 : MonoBehaviour {
 	struct RigidBody
     {
 		public Vector3 position;
@@ -117,18 +117,13 @@ public class GPUPhysicsPawns : MonoBehaviour {
 	private int frameCounter;
 
 	void Start() {
-		//Application.targetFrameRate = 300;
-
-		cubeScale = new Vector3(scale, scale, scale);
-
-		VoxelizeMesh voxelizeMesh = GetComponent<VoxelizeMesh>();
-		mesh = voxelizeMesh.meshToVoxelize;
-		voxelizeMesh.Voxelize(mesh);
-		particleInitialPositions = voxelizeMesh.PositionList;
-		particlesPerBody = particleInitialPositions.Count;
-		
-		vertexCount = mesh.GetIndexCount(0);
-		particleDiameter = voxelizeMesh.ParticleSize;
+		//1. Get the VoxelizeMesh component
+		//2. Use meshToVoxelize as the property mesh
+		//3. Use it to voxelize its mesh
+		//4. Set the particleInitialPositions to the PositionList
+		//5. Set the particlesPerBody
+		//6. Set vertex count
+		//7. Set the particle diameter
 
 		InitArrays();
 

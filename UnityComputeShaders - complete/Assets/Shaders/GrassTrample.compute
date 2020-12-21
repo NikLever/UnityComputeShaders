@@ -1,0 +1,38 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#define THREADGROUPSIZE 128 
+#pragma kernel UpdateGrass
+
+struct GrassClump
+{
+    float3 position;
+    float lean;
+    float trample;
+    float noise;
+};
+RWStructuredBuffer<GrassClump> clumpsBuffer;
+float time;
+float maxLean;
+float speed;
+float4 tramplePos;
+float trampleRadius;
+
+[numthreads(THREADGROUPSIZE,1,1)]
+void UpdateGrass (uint3 id : SV_DispatchThreadID)
+{
+    GrassClump clump = clumpsBuffer[id.x];
+
+    float3 relativePosition = clump.position - tramplePos.xyz;
+    float dist = length(relativePosition);
+
+    if (dist<trampleRadius){
+        clump.trample = (trampleRadius - dist)/trampleRadius;
+        clump.position.y = min(clump.position.y, -0.6*clump.trample);
+    }else if (clump.trample!=0){
+        clump.trample *= 0.99;
+        clump.position.y *= 0.99;
+    }
+
+    clump.lean = sin(time*speed) * maxLean * clump.noise;
+
+    clumpsBuffer[id.x] = clump;
+}

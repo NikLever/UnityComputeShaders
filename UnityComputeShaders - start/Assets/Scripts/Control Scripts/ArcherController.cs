@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+[RequireComponent(typeof (NavMeshAgent))]
 [RequireComponent(typeof(Animator))]
-public class GirlController : MonoBehaviour
+public class ArcherController : MonoBehaviour
 {
     public Material material;
 
@@ -21,24 +22,8 @@ public class GirlController : MonoBehaviour
         cam = Camera.main;
         // Don’t update position automatically
         agent.updatePosition = false;
-        FindAndSelectMaterial();
     }
 
-	void FindAndSelectMaterial() {
-        GameObject go = GameObject.Find("Plane");
-        if (go)
-        {
-            Renderer renderer = go.GetComponent<Renderer>();
-            material = renderer.material;
-
-            if (material)
-            {
-                Vector4 pos = new Vector4(transform.position.x, transform.position.y, transform.position.z, 0);
-                material.SetVector("_Position", pos);
-            }
-        }
-    }
-    
     // Update is called once per frame
     void Update()
     {
@@ -71,8 +56,13 @@ public class GirlController : MonoBehaviour
         if (Time.deltaTime > 1e-5f)
             velocity = smoothDeltaPosition / Time.deltaTime;
 
+        float speed = velocity.magnitude;
+        bool shouldMove = speed > 0.5f;// && agent.remainingDistance > agent.radius;
+
         // Update animation parameters
-        anim.SetFloat("speed", velocity.magnitude);
+        anim.SetFloat("speed", speed);
+
+        //GetComponent<LookAt>().lookAtTargetPosition = agent.steeringTarget + transform.forward;
     }
 
     void OnAnimatorMove()

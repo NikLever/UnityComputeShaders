@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class GPUPhysicsPawns : MonoBehaviour {
+public class Challenge5 : MonoBehaviour {
 	struct RigidBody
     {
 		public Vector3 position;
@@ -118,8 +118,6 @@ public class GPUPhysicsPawns : MonoBehaviour {
 
 	void Start() {
 		//Application.targetFrameRate = 300;
-
-		cubeScale = new Vector3(scale, scale, scale);
 
 		VoxelizeMesh voxelizeMesh = GetComponent<VoxelizeMesh>();
 		mesh = voxelizeMesh.meshToVoxelize;
