@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657838, g: 0.49641234, b: 0.57481676, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657874, g: 0.49641258, b: 0.574817, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -266,7 +266,7 @@ MonoBehaviour:
   gridSize: {x: 50, y: 40, z: 50}
   gridPosition: {x: 0, y: 10, z: 0}
   useGrid: 1
-  rigidBodyCount: 1000
+  rigidBodyCount: 20
   stepsPerUpdate: 8
 --- !u!4 &411714672
 Transform:
@@ -296,7 +296,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meshToVoxelize: {fileID: -2432090755550338912, guid: ea683a209d8984d068fab7cece2058b1,
     type: 3}
-  yParticleCount: 4
+  yParticleCount: 5
   layer: 9
 --- !u!1 &1481930526
 GameObject:
