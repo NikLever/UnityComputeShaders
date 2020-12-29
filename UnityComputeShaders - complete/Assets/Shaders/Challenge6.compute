@@ -1,0 +1,43 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#define THREADGROUPSIZE 128 
+#pragma kernel UpdateGrass
+
+struct GrassClump
+{
+    float3 position;
+    float lean;
+    float trample;
+    float noise;
+};
+RWStructuredBuffer<GrassClump> clumpsBuffer;
+
+float maxLean;
+float4 wind;
+float4 tramplePos;
+float trampleRadius;
+float time;
+
+#include "noiseSimplex.cginc"
+
+[numthreads(THREADGROUPSIZE,1,1)]
+void UpdateGrass (uint3 id : SV_DispatchThreadID)
+{
+    GrassClump clump = clumpsBuffer[id.x];
+
+    float3 relativePosition = clump.position - tramplePos.xyz;
+    float dist = length(relativePosition);
+
+    if (dist<trampleRadius){
+        clump.trample = (trampleRadius - dist)/trampleRadius;
+        clump.position.y = min(clump.position.y, -0.3*clump.trample);
+    }else if (clump.trample!=0){
+        clump.trample *= 0.99;
+        clump.position.y *= 0.99;
+    }
+
+    float2 offset = (clump.position.xz + wind.xy * time * wind.z) * wind.w;
+    float noise = perlin(offset.x, offset.y) * 2 - 1;
+    clump.lean = noise * maxLean;
+
+    clumpsBuffer[id.x] = clump;
+}

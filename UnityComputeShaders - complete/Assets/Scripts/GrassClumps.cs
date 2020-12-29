@@ -26,11 +26,11 @@ public class GrassClumps : MonoBehaviour
     public Material material;
     public ComputeShader shader;
     [Range(0,1)]
-    public float density;
+    public float density = 0.8f;
     [Range(0.1f,3)]
-    public float scale;
+    public float scale = 0.2f;
     [Range(10, 45)]
-    public float maxLean;
+    public float maxLean = 25;
 
     ComputeBuffer clumpsBuffer;
     ComputeBuffer argsBuffer;
@@ -71,7 +71,10 @@ public class GrassClumps : MonoBehaviour
 
         for(int i=0; i<count; i++)
         {
-            Vector3 pos = new Vector3(Random.value * bounds.extents.x * 2 - bounds.extents.x, 0, Random.value * bounds.extents.z * 2 - bounds.extents.z);
+            Vector3 pos = new Vector3((Random.value * bounds.extents.x * 2 - bounds.extents.x) * transform.localScale.x,
+                                       0,
+                                       (Random.value * bounds.extents.z * 2 - bounds.extents.z) * transform.localScale.z);
+
             clumpsArray[i] = new GrassClump(pos);
         }
 

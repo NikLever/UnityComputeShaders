@@ -2,6 +2,8 @@
 #define THREADGROUPSIZE 128 
 #pragma kernel BendGrass
 
+#include "noiseSimplex.cginc"
+
 struct GrassBlade
 {
     float3 position;
@@ -12,14 +14,16 @@ struct GrassBlade
 RWStructuredBuffer<GrassBlade> bladesBuffer;
 float time;
 float maxBend;
-float speed;
+float4 wind;
 
 [numthreads(THREADGROUPSIZE,1,1)]
 void BendGrass (uint3 id : SV_DispatchThreadID)
 {
     GrassBlade blade = bladesBuffer[id.x];
 
-    blade.bend = sin(time*speed) * maxBend * blade.noise;
-
+    float2 offset = (blade.position.xz + wind.xy * time * wind.z) * wind.w;
+    float noise = perlin(offset.x, offset.y) * 2 - 1;
+    blade.bend = noise * maxBend * blade.noise;
+    
     bladesBuffer[id.x] = blade;
 }

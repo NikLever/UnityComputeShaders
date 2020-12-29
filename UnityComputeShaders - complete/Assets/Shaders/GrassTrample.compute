@@ -26,7 +26,7 @@ void UpdateGrass (uint3 id : SV_DispatchThreadID)
 
     if (dist<trampleRadius){
         clump.trample = (trampleRadius - dist)/trampleRadius;
-        clump.position.y = min(clump.position.y, -0.6*clump.trample);
+        clump.position.y = min(clump.position.y, -0.3*clump.trample);
     }else if (clump.trample!=0){
         clump.trample *= 0.99;
         clump.position.y *= 0.99;

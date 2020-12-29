@@ -32,6 +32,7 @@
         float _Scale;
         float _Trample;
         float4x4 _Matrix;
+        float3 _Position;
 
         float4x4 create_matrix(float3 pos, float theta){
             float c = cos(theta);
@@ -62,7 +63,9 @@
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 v.vertex.y *= _Trample;
                 v.vertex.xyz *= _Scale;
-                v.vertex = mul(_Matrix, v.vertex);
+                float4 rotatedVertex = mul(_Matrix, v.vertex);
+                v.vertex.xyz += _Position;
+                v.vertex = lerp(v.vertex, rotatedVertex, v.texcoord.y);
             #endif
         }
 
@@ -70,7 +73,8 @@
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 GrassClump clump = clumpsBuffer[unity_InstanceID];
-                _Trample = 1 - clump.trample;
+                _Trample = min(1, 1 - clump.trample);
+                _Position = clump.position;
                 _Matrix = create_matrix(clump.position, clump.lean);
             #endif
         }
