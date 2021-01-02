@@ -31,15 +31,16 @@
         fixed4 _Color;
         float _Scale;
         float4x4 _Matrix;
+        float3 _Position;
 
         float4x4 create_matrix(float3 pos, float theta){
             float c = cos(theta);
             float s = sin(theta);
             return float4x4(
-                1, 0,  0, pos.x,
-                0, c, -s, pos.y,
-                0, s,  c, pos.z,
-                0, 0,  0, 1
+                c,-s, 0, pos.x,
+                s, c, 0, pos.y,
+                0, 0, 1, pos.z,
+                0, 0, 0, 1
             );
         }
         
@@ -58,16 +59,14 @@
             UNITY_INITIALIZE_OUTPUT(Input, data);
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                v.vertex.xyz *= _Scale;
-                v.vertex = mul(_Matrix, v.vertex);
+                
             #endif
         }
 
         void setup()
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                GrassClump clump = clumpsBuffer[unity_InstanceID];
-                _Matrix = create_matrix(clump.position, clump.lean);
+                
             #endif
         }
 

@@ -1,0 +1,28 @@
+﻿#pragma kernel advect
+#pragma kernel force
+#pragma kernel project
+#pragma kernel diffuse
+
+[numthreads(8,8,1)]
+void advect (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(8,8,1)]
+void force (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(8,8,1)]
+void project (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(8,8,1)]
+void diffuse (uint3 id : SV_DispatchThreadID)
+{
+    
+}

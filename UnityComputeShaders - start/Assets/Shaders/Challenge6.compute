@@ -10,11 +10,14 @@ struct GrassClump
     float noise;
 };
 RWStructuredBuffer<GrassClump> clumpsBuffer;
-float time;
+
 float maxLean;
-float speed;
+float4 wind;
 float4 tramplePos;
 float trampleRadius;
+float time;
+
+#include "noiseSimplex.cginc"
 
 [numthreads(THREADGROUPSIZE,1,1)]
 void UpdateGrass (uint3 id : SV_DispatchThreadID)
@@ -32,7 +35,9 @@ void UpdateGrass (uint3 id : SV_DispatchThreadID)
         clump.position.y *= 0.99;
     }
 
-    clump.lean = sin(time*speed) * maxLean * clump.noise;
+    float2 offset = (clump.position.xz + wind.xy * time * wind.z) * wind.w;
+    float noise = perlin(offset.x, offset.y) * 2 - 1;
+    clump.lean = noise * maxLean;
 
     clumpsBuffer[id.x] = clump;
 }

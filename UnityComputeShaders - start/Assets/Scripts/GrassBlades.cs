@@ -25,14 +25,20 @@ public class GrassBlades : MonoBehaviour
 
     public Material material;
     public ComputeShader shader;
+    public Material visualizeNoise;
+    public bool viewNoise = false;
     [Range(0,1)]
     public float density;
     [Range(0.1f,3)]
     public float scale;
     [Range(10, 45)]
     public float maxBend;
-    [Range(0.2f, 4)]
-    public float speed = 2;
+    [Range(0, 2)]
+    public float windSpeed;
+    [Range(0, 360)]
+    public float windDirection;
+    [Range(10, 1000)]
+    public float windScale;
 
     ComputeBuffer bladesBuffer;
     ComputeBuffer argsBuffer;
@@ -43,6 +49,7 @@ public class GrassBlades : MonoBehaviour
     int groupSize;
     int kernelBendGrass;
     Mesh blade;
+    Material groundMaterial;
 
     Mesh Blade
     {
@@ -103,19 +110,6 @@ public class GrassBlades : MonoBehaviour
                     new Vector2(0.5f,1)
                 };
 
-                Vector2[] ids =
-                {
-                    new Vector2(0,0),
-                    new Vector2(1,0),
-                    new Vector2(2,0),
-                    new Vector2(3,0),
-                    new Vector2(4,0),
-                    new Vector2(5,0),
-                    new Vector2(6,0),
-                    new Vector2(7,0),
-                    new Vector2(8,0),
-                };
-
                 int[] indices =
                 {
                     0,1,2,1,3,2,//row 1
@@ -127,7 +121,6 @@ public class GrassBlades : MonoBehaviour
                 mesh.vertices = vertices;
                 mesh.normals = normals;
                 mesh.uv = uvs;
-                mesh.uv2 = ids;
                 mesh.SetIndices(indices, MeshTopology.Triangles, 0);
             }
 
@@ -139,7 +132,26 @@ public class GrassBlades : MonoBehaviour
     {
         bounds = new Bounds(Vector3.zero, new Vector3(30, 30, 30));
         blade = Blade;
+
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        groundMaterial = renderer.material;
+
         InitShader();
+    }
+
+    private void OnValidate()
+    {
+        if (groundMaterial != null)
+        {
+            MeshRenderer renderer = GetComponent<MeshRenderer>();
+
+            renderer.material = (viewNoise) ? visualizeNoise : groundMaterial;
+
+            float theta = windDirection * Mathf.PI / 180;
+            Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
+            shader.SetVector("wind", wind);
+            visualizeNoise.SetVector("wind", wind);
+        }
     }
 
     void InitShader()
@@ -174,7 +186,9 @@ public class GrassBlades : MonoBehaviour
 
         shader.SetBuffer(kernelBendGrass, "bladesBuffer", bladesBuffer);
         shader.SetFloat("maxBend", maxBend * Mathf.PI / 180);
-        shader.SetFloat("speed", speed);
+        float theta = windDirection * Mathf.PI / 180;
+        Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
+        shader.SetVector("wind", wind);
         timeID = Shader.PropertyToID("time");
 
         argsArray[0] = blade.GetIndexCount(0);
@@ -192,7 +206,10 @@ public class GrassBlades : MonoBehaviour
         shader.SetFloat(timeID, Time.time);
         shader.Dispatch(kernelBendGrass, groupSize, 1, 1);
 
-        Graphics.DrawMeshInstancedIndirect(blade, 0, material, bounds, argsBuffer);
+        if (!viewNoise)
+        {
+            Graphics.DrawMeshInstancedIndirect(blade, 0, material, bounds, argsBuffer);
+        }
     }
 
     private void OnDestroy()

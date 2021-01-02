@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GrassClumps : MonoBehaviour
+public class GrassTerrain : MonoBehaviour
 {
     struct GrassClump
     {
@@ -25,12 +25,14 @@ public class GrassClumps : MonoBehaviour
     public Mesh mesh;
     public Material material;
     public ComputeShader shader;
-    [Range(0,1)]
+    [Range(0,3)]
     public float density = 0.8f;
     [Range(0.1f,3)]
     public float scale = 0.2f;
     [Range(10, 45)]
     public float maxLean = 25;
+    [Range(0, 1)]
+    public float heightAffect = 0.5f;
 
     ComputeBuffer clumpsBuffer;
     ComputeBuffer argsBuffer;
@@ -67,16 +69,9 @@ public class GrassClumps : MonoBehaviour
         groupSize = Mathf.CeilToInt((float)total / (float)threadGroupSize);
         int count = groupSize * (int)threadGroupSize;
 
-        clumpsArray = new GrassClump[count];
+        InitPositionsArray(count, bounds);
 
-        for(int i=0; i<count; i++)
-        {
-            Vector3 pos = new Vector3( Random.value * bounds.extents.x * 2 - bounds.extents.x + bounds.center.x,
-                                       0,
-                                       Random.value * bounds.extents.z * 2 - bounds.extents.z + bounds.center.z);
-            pos = transform.TransformPoint(pos);
-            clumpsArray[i] = new GrassClump(pos);
-        }
+        count = clumpsArray.Length;
 
         clumpsBuffer = new ComputeBuffer(count, SIZE_GRASS_CLUMP);
         clumpsBuffer.SetData(clumpsArray);
@@ -92,6 +87,63 @@ public class GrassClumps : MonoBehaviour
 
         material.SetBuffer("clumpsBuffer", clumpsBuffer);
         material.SetFloat("_Scale", scale);
+    }
+
+    void InitPositionsArray(int count, Bounds bounds)
+    {
+        gameObject.AddComponent<MeshCollider>();
+        RaycastHit hit;
+        Vector3 v = new Vector3();
+        v.z = (bounds.center.z + bounds.extents.z) * transform.localScale.z;
+        v = transform.TransformPoint(v);
+        float castY = v.y;
+        v.Set(0, 0, 0);
+        v.z = (bounds.center.z - bounds.extents.z) * transform.localScale.z;
+        v = transform.TransformPoint(v);
+        float minY = v.y;
+        float range = castY - minY;
+        castY += 10;
+        int missed = 0;
+        int loopCount = 0;
+
+        Vector2 deltaLimits = new Vector2(10000, -10000);
+
+        clumpsArray = new GrassClump[count];
+
+        int index = 0;
+
+        while(index < count && loopCount<(count*10))
+        {
+            Vector3 pos = new Vector3((Random.value * bounds.extents.x * 2 - bounds.extents.x) * transform.localScale.x,
+                                       castY,
+                                      (Random.value * bounds.extents.y * 2 - bounds.extents.y) * transform.localScale.y);
+
+            if (Physics.Raycast(pos, Vector3.down, out hit))
+            {
+                pos.y = hit.point.y;
+                float deltaHeight = ((pos.y - minY) / range) * heightAffect;
+
+                if (deltaHeight < deltaLimits.x) deltaLimits.x = deltaHeight;
+                if (deltaHeight > deltaLimits.y) deltaLimits.y = deltaHeight;
+
+                if (Random.value > deltaHeight)
+                {
+                    GrassClump clump = new GrassClump(pos);
+                    clumpsArray[index++] = clump;
+                }
+            }
+            else
+            {
+                missed++;
+            }
+
+            loopCount++;
+        }
+
+        if (missed>0) Debug.Log(missed + " hit point(s) not found.");
+        if (index != count) Debug.Log("Not complete, loopCount exceeded");
+
+        Debug.Log("Delta limits " + deltaLimits);
     }
 
     // Update is called once per frame

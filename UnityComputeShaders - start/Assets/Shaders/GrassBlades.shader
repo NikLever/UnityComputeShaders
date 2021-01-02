@@ -31,11 +31,8 @@
         fixed4 _Color;
         float _Scale;
         float _Fade;
-        float4x4 _Matrix0;
-        float4x4 _Matrix1;
-        float4x4 _Matrix2;
-        float4x4 _Matrix3;
-        float4x4 _Matrix4;
+        float4x4 _Matrix;
+        float3 _Position;
 
         float4x4 create_matrix(float3 pos, float theta){
             float c = cos(theta);
@@ -64,19 +61,10 @@
             UNITY_INITIALIZE_OUTPUT(Input, data);
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                uint vID = (uint)v.texcoord1[0];
                 v.vertex.xyz *= _Scale;
-                if (vID==2 || vID==3){
-                    v.vertex = mul(_Matrix1, v.vertex);
-                }else if (vID==4 || vID==5){
-                    v.vertex = mul(_Matrix2, v.vertex);
-                }else if (vID==6 || vID==7){
-                    v.vertex = mul(_Matrix3, v.vertex);
-                }else if (vID==8){
-                    v.vertex = mul(_Matrix4, v.vertex);
-                }else{
-                    v.vertex = mul(_Matrix0, v.vertex);
-                }
+                float4 rotatedVertex = mul(_Matrix, v.vertex);
+                v.vertex.xyz += _Position;
+                v.vertex = lerp(v.vertex, rotatedVertex, v.texcoord.y);
             #endif
         }
 
@@ -84,11 +72,8 @@
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 GrassBlade blade = bladesBuffer[unity_InstanceID];
-                _Matrix4 = create_matrix(blade.position, blade.lean);
-                _Matrix3 = create_matrix(blade.position, blade.lean*0.7);
-                _Matrix2 = create_matrix(blade.position, blade.lean*0.3);
-                _Matrix1 = create_matrix(blade.position, blade.lean*0.1);
-                _Matrix0 = create_matrix(blade.position, 0);
+                _Matrix = create_matrix(blade.position, blade.lean);
+                _Position = blade.position;
                 _Fade = blade.fade;
             #endif
         }

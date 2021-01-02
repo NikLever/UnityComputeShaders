@@ -17,7 +17,7 @@ void LeanGrass (uint3 id : SV_DispatchThreadID)
 {
     GrassClump clump = clumpsBuffer[id.x];
 
-    clump.lean = sin(time) * maxLean * clump.noise;
+    clump.lean = sin(time + clump.noise) * maxLean * clump.noise;
 
     clumpsBuffer[id.x] = clump;
 }
