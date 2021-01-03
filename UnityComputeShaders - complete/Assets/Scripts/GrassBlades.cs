@@ -177,7 +177,10 @@ public class GrassBlades : MonoBehaviour
 
         for(int i=0; i<count; i++)
         {
-            Vector3 pos = new Vector3(Random.value * bounds.extents.x * 2 - bounds.extents.x, 0, Random.value * bounds.extents.z * 2 - bounds.extents.z);
+            Vector3 pos = new Vector3( Random.value * bounds.extents.x * 2 - bounds.extents.x + bounds.center.x,
+                                       0,
+                                       Random.value * bounds.extents.z * 2 - bounds.extents.z + bounds.center.z);
+            pos = transform.TransformPoint(pos);
             bladesArray[i] = new GrassBlade(pos);
         }
 

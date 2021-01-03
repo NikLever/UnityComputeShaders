@@ -69,59 +69,17 @@ public class GrassBlades : MonoBehaviour
                 float rowHeight = height / 4;
                 float halfWidth = height / 10;
 
-                Vector3[] vertices =
-                {
-                    new Vector3(-halfWidth, 0, 0),
-                    new Vector3( halfWidth, 0, 0),
-                    new Vector3(-halfWidth, rowHeight, 0),
-                    new Vector3( halfWidth, rowHeight, 0),
-                    new Vector3(-halfWidth*0.9f, rowHeight*2, 0),
-                    new Vector3( halfWidth*0.9f, rowHeight*2, 0),
-                    new Vector3(-halfWidth*0.8f, rowHeight*3, 0),
-                    new Vector3( halfWidth*0.8f, rowHeight*3, 0),
-                    new Vector3( 0, rowHeight*4, 0)
-                };
+                //1. Use the above variables to define the vertices array
 
+                //2. Define the normals array, hint: each vertex uses the same normal
                 Vector3 normal = new Vector3(0, 0, -1);
 
-                Vector3[] normals =
-                {
-                    normal,
-                    normal,
-                    normal,
-                    normal,
-                    normal,
-                    normal,
-                    normal,
-                    normal,
-                    normal
-                };
+                //3. Define the uvs array
 
-                Vector2[] uvs =
-                {
-                    new Vector2(0,0),
-                    new Vector2(1,0),
-                    new Vector2(0,0.25f),
-                    new Vector2(1,0.25f),
-                    new Vector2(0,0.5f),
-                    new Vector2(1,0.5f),
-                    new Vector2(0,0.75f),
-                    new Vector2(1,0.75f),
-                    new Vector2(0.5f,1)
-                };
+                //4. Define the indices array
 
-                int[] indices =
-                {
-                    0,1,2,1,3,2,//row 1
-                    2,3,4,3,5,4,//row 2
-                    4,5,6,5,7,6,//row 3
-                    6,7,8//row 4
-                };
+                //5. Assign the mesh properties using the arrays
 
-                mesh.vertices = vertices;
-                mesh.normals = normals;
-                mesh.uv = uvs;
-                mesh.SetIndices(indices, MeshTopology.Triangles, 0);
             }
 
             return mesh;
@@ -147,8 +105,8 @@ public class GrassBlades : MonoBehaviour
 
             renderer.material = (viewNoise) ? visualizeNoise : groundMaterial;
 
-            float theta = windDirection * Mathf.PI / 180;
-            Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
+            //TO DO: set wind using wind direction, speed and noise scale
+            Vector4 wind = new Vector4();
             shader.SetVector("wind", wind);
             visualizeNoise.SetVector("wind", wind);
         }
@@ -177,7 +135,10 @@ public class GrassBlades : MonoBehaviour
 
         for(int i=0; i<count; i++)
         {
-            Vector3 pos = new Vector3(Random.value * bounds.extents.x * 2 - bounds.extents.x, 0, Random.value * bounds.extents.z * 2 - bounds.extents.z);
+            Vector3 pos = new Vector3( Random.value * bounds.extents.x * 2 - bounds.extents.x + bounds.center.x,
+                                       0,
+                                       Random.value * bounds.extents.z * 2 - bounds.extents.z + bounds.center.z);
+            pos = transform.TransformPoint(pos);
             bladesArray[i] = new GrassBlade(pos);
         }
 
@@ -186,9 +147,10 @@ public class GrassBlades : MonoBehaviour
 
         shader.SetBuffer(kernelBendGrass, "bladesBuffer", bladesBuffer);
         shader.SetFloat("maxBend", maxBend * Mathf.PI / 180);
-        float theta = windDirection * Mathf.PI / 180;
-        Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
+        //TO DO: set wind using wind direction, speed and noise scale
+        Vector4 wind = new Vector4();
         shader.SetVector("wind", wind);
+
         timeID = Shader.PropertyToID("time");
 
         argsArray[0] = blade.GetIndexCount(0);
