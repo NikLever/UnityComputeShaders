@@ -91,59 +91,7 @@ public class GrassTerrain : MonoBehaviour
 
     void InitPositionsArray(int count, Bounds bounds)
     {
-        gameObject.AddComponent<MeshCollider>();
-        RaycastHit hit;
-        Vector3 v = new Vector3();
-        v.z = (bounds.center.z + bounds.extents.z) * transform.localScale.z;
-        v = transform.TransformPoint(v);
-        float castY = v.y;
-        v.Set(0, 0, 0);
-        v.z = (bounds.center.z - bounds.extents.z) * transform.localScale.z;
-        v = transform.TransformPoint(v);
-        float minY = v.y;
-        float range = castY - minY;
-        castY += 10;
-        int missed = 0;
-        int loopCount = 0;
-
-        Vector2 deltaLimits = new Vector2(10000, -10000);
-
         clumpsArray = new GrassClump[count];
-
-        int index = 0;
-
-        while(index < count && loopCount<(count*10))
-        {
-            Vector3 pos = new Vector3((Random.value * bounds.extents.x * 2 - bounds.extents.x) * transform.localScale.x,
-                                       castY,
-                                      (Random.value * bounds.extents.y * 2 - bounds.extents.y) * transform.localScale.y);
-
-            if (Physics.Raycast(pos, Vector3.down, out hit))
-            {
-                pos.y = hit.point.y;
-                float deltaHeight = ((pos.y - minY) / range) * heightAffect;
-
-                if (deltaHeight < deltaLimits.x) deltaLimits.x = deltaHeight;
-                if (deltaHeight > deltaLimits.y) deltaLimits.y = deltaHeight;
-
-                if (Random.value > deltaHeight)
-                {
-                    GrassClump clump = new GrassClump(pos);
-                    clumpsArray[index++] = clump;
-                }
-            }
-            else
-            {
-                missed++;
-            }
-
-            loopCount++;
-        }
-
-        if (missed>0) Debug.Log(missed + " hit point(s) not found.");
-        if (index != count) Debug.Log("Not complete, loopCount exceeded");
-
-        Debug.Log("Delta limits " + deltaLimits);
     }
 
     // Update is called once per frame

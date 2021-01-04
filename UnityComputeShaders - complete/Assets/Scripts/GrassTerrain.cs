@@ -91,14 +91,16 @@ public class GrassTerrain : MonoBehaviour
 
     void InitPositionsArray(int count, Bounds bounds)
     {
+    	clumpsArray = new GrassClump[count];
+    
         gameObject.AddComponent<MeshCollider>();
         RaycastHit hit;
         Vector3 v = new Vector3();
-        v.z = (bounds.center.z + bounds.extents.z) * transform.localScale.z;
+        v.y = (bounds.center.y + bounds.extents.y);
         v = transform.TransformPoint(v);
         float castY = v.y;
         v.Set(0, 0, 0);
-        v.z = (bounds.center.z - bounds.extents.z) * transform.localScale.z;
+        v.y = (bounds.center.y - bounds.extents.y);
         v = transform.TransformPoint(v);
         float minY = v.y;
         float range = castY - minY;
@@ -108,16 +110,16 @@ public class GrassTerrain : MonoBehaviour
 
         Vector2 deltaLimits = new Vector2(10000, -10000);
 
-        clumpsArray = new GrassClump[count];
-
         int index = 0;
 
         while(index < count && loopCount<(count*10))
         {
-            Vector3 pos = new Vector3((Random.value * bounds.extents.x * 2 - bounds.extents.x) * transform.localScale.x,
-                                       castY,
-                                      (Random.value * bounds.extents.y * 2 - bounds.extents.y) * transform.localScale.y);
-
+            Vector3 pos = new Vector3((Random.value * bounds.extents.x * 2 - bounds.extents.x) + bounds.center.x,
+                                       0,
+                                      (Random.value * bounds.extents.z * 2 - bounds.extents.z) + bounds.center.z);
+			pos = transform.TransformPoint(pos);
+			pos.y = castY;
+			
             if (Physics.Raycast(pos, Vector3.down, out hit))
             {
                 pos.y = hit.point.y;
