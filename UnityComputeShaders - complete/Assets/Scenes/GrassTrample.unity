@@ -470,7 +470,7 @@ MonoBehaviour:
   speed: 1.59
   maxLean: 24.4
   trampler: {fileID: 1500874291}
-  trampleRadius: 1.02
+  trampleRadius: 0.7
 --- !u!23 &2071463610
 MeshRenderer:
   m_ObjectHideFlags: 0

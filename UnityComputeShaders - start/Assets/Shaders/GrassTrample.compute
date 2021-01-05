@@ -7,6 +7,7 @@ struct GrassClump
     float3 position;
     float lean;
     float trample;
+    float4 quaternion;
     float noise;
 };
 RWStructuredBuffer<GrassClump> clumpsBuffer;
@@ -16,21 +17,23 @@ float speed;
 float4 tramplePos;
 float trampleRadius;
 
+float4 MapVector(float3 v1, float3 v2){
+    v1 = normalize(v1);
+    v2 = normalize(v2);
+    float3 v = v1+v2;
+    v = normalize(v);
+    float4 q = 0;
+    q.w = dot(v, v2);
+    q.xyz = cross(v, v2);
+    return q;
+}
+
 [numthreads(THREADGROUPSIZE,1,1)]
 void UpdateGrass (uint3 id : SV_DispatchThreadID)
 {
     GrassClump clump = clumpsBuffer[id.x];
 
-    float3 relativePosition = clump.position - tramplePos.xyz;
-    float dist = length(relativePosition);
-
-    if (dist<trampleRadius){
-        clump.trample = (trampleRadius - dist)/trampleRadius;
-        clump.position.y = min(clump.position.y, -0.3*clump.trample);
-    }else if (clump.trample!=0){
-        clump.trample *= 0.99;
-        clump.position.y *= 0.99;
-    }
+    //TO DO: set trample and the quaternion for the clump
 
     clump.lean = sin(time*speed) * maxLean * clump.noise;
 

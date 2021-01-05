@@ -9,6 +9,7 @@ public class GrassTrample : MonoBehaviour
         public Vector3 position;
         public float lean;
         public float trample;
+        public Quaternion quaternion;
         public float noise;
 
         public GrassClump( Vector3 pos)
@@ -20,9 +21,10 @@ public class GrassTrample : MonoBehaviour
             noise = Random.Range(0.5f, 1);
             if (Random.value < 0.5f) noise = -noise;
             trample = 0;
+            quaternion = Quaternion.identity;
         }
     }
-    int SIZE_GRASS_CLUMP = 6 * sizeof(float);
+    int SIZE_GRASS_CLUMP = 10 * sizeof(float);
 
     public Mesh mesh;
     public Material material;
