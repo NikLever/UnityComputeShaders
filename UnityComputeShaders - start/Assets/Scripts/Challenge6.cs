@@ -9,6 +9,7 @@ public class Challenge6 : MonoBehaviour
         public Vector3 position;
         public float lean;
         public float trample;
+        public Quaternion quaternion;
         public float noise;
 
         public GrassClump( Vector3 pos)
@@ -19,10 +20,11 @@ public class Challenge6 : MonoBehaviour
             lean = 0;
             noise = Random.Range(0.5f, 1);
             if (Random.value < 0.5f) noise = -noise;
+            quaternion = Quaternion.identity;
             trample = 0;
         }
     }
-    int SIZE_GRASS_CLUMP = 6 * sizeof(float);
+    int SIZE_GRASS_CLUMP = 10 * sizeof(float);
 
     public Mesh mesh;
     public Material material;
@@ -33,17 +35,12 @@ public class Challenge6 : MonoBehaviour
     public float density;
     [Range(0.1f,3)]
     public float scale;
-    [Range(0, 2)]
-    public float windSpeed;
-    [Range(0, 360)]
-    public float windDirection;
-    [Range(10, 1000)]
-    public float windScale;
     [Range(10, 45)]
     public float maxLean;
     public Transform trampler;
     [Range(0.1f,2)]
     public float trampleRadius = 0.5f;
+    //TO DO: Add wind direction (0-360), speed (0-2)  and scale (10-1000)
 
     ComputeBuffer clumpsBuffer;
     ComputeBuffer argsBuffer;
@@ -76,8 +73,8 @@ public class Challenge6 : MonoBehaviour
 
             renderer.material = (viewNoise) ? visualizeNoise : groundMaterial;
 
-            float theta = windDirection * Mathf.PI / 180;
-            Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
+            //TO DO: Set wind vector
+            Vector4 wind = new Vector4();
             shader.SetVector("wind", wind);
             visualizeNoise.SetVector("wind", wind);
         }
@@ -117,8 +114,8 @@ public class Challenge6 : MonoBehaviour
         shader.SetBuffer(kernelUpdateGrass, "clumpsBuffer", clumpsBuffer);
         shader.SetFloat("maxLean", maxLean * Mathf.PI / 180);
         shader.SetFloat("trampleRadius", trampleRadius);
-        float theta = windDirection * Mathf.PI / 180;
-        Vector4 wind = new Vector4(Mathf.Cos(theta), Mathf.Sin(theta), windSpeed, windScale);
+        //TO DO: Set wind vector
+        Vector4 wind = new Vector4();
         shader.SetVector("wind", wind);
         timeID = Shader.PropertyToID("time");
         tramplePosID = Shader.PropertyToID("tramplePos");
