@@ -43,7 +43,7 @@ void UpdateGrass (uint3 id : SV_DispatchThreadID)
         clump.trample = (trampleRadius - dist)/trampleRadius;
         clump.quaternion = MapVector(float3(0,1,0), relativePosition);
     }else if (clump.trample!=0){
-        clump.trample *= 0.98;
+        clump.trample *= 0.999;
     }
 
     float2 offset = (clump.position.xz + wind.xy * time * wind.z) * wind.w;
