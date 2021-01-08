@@ -467,14 +467,14 @@ MonoBehaviour:
   visualizeNoise: {fileID: 2100000, guid: 64be14a0480d049e0ba65fbca40d8bc1, type: 2}
   viewNoise: 0
   shader: {fileID: 7200000, guid: 77b834b103c254a8099bcd04e98c8c11, type: 3}
-  density: 0.838
-  scale: 0.42
-  windSpeed: 0.18
+  density: 0.698
+  scale: 0.66
+  windSpeed: 0.4
   windDirection: 130
   windScale: 105
   maxLean: 45
   trampler: {fileID: 1500874291}
-  trampleRadius: 1
+  trampleRadius: 0.81
 --- !u!23 &2071463610
 MeshRenderer:
   m_ObjectHideFlags: 0
