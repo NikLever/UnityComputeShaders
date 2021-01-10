@@ -25,11 +25,12 @@ struct SPHCollider
 shared RWStructuredBuffer<SPHParticle> particles;
 shared StructuredBuffer<SPHCollider> colliders;
 shared RWStructuredBuffer<int4> grid;
-shared RWStructuredBuffer<int> gridDebug;
+shared RWStructuredBuffer<float> debugBuffer;
 
 //Passed from SPHGrid.cs   
 int particleCount;
 int colliderCount;
+int gridCount;
 float smoothingRadius;
 float smoothingRadiusSq;
 float gas;
@@ -40,10 +41,11 @@ float particleDrag;
 float particleViscosity;
 float damping;
 float deltaTime;
-float4 gravity;
+float4 gravity;//w is scalar
 float4 gridStartPosition;//w is grid cell size
 int4 gridDimensions;//w is x*y*z 
 int useGrid;
+int debug;
 
 float3 penetrationNormal;
 float penetrationLength;
@@ -85,9 +87,18 @@ float3 DampVelocity(SPHCollider collider, float3 velocity, float drag)
 [numthreads(GRID_THREAD_COUNT,1,1)]
 void ClearGrid (uint3 id : SV_DispatchThreadID)
 {
-	int4 voxel = grid[id.x];
-	voxel.x = voxel.y = voxel.z = voxel.w = -1;
-	grid[id.x] = voxel;
+    if (id.x>=0 && id.x<gridCount){
+	    int4 voxel = grid[id.x];
+	    voxel.x = voxel.y = voxel.z = voxel.w = -1;
+	    grid[id.x] = voxel;
+    }else if (debug==1){
+        debugBuffer[0] += 1;
+        debugBuffer[16] = gridDimensions.x;
+        debugBuffer[17] = gridDimensions.y;
+        debugBuffer[18] = gridDimensions.z;
+        debugBuffer[19] = gridDimensions.w;
+        debugBuffer[20] = id.x;
+    }
 }
 
 // Returns the grid index for particle p
@@ -121,13 +132,18 @@ void PopulateGrid (uint3 id : SV_DispatchThreadID)
 			voxel.z = id.x;
 		}else if (voxel.w==-1){
 			voxel.w = id.x;
+		}else if (debug==1){
+			debugBuffer[5] = debugBuffer[5] + 1;
 		}
-        //else{
-		//	gridDebug[0]++;
-		//}
 
 		grid[index] = voxel;
-	}
+	}else if (debug==1){
+        debugBuffer[1] += 1;
+        debugBuffer[16] = gridDimensions.x;
+        debugBuffer[17] = gridDimensions.y;
+        debugBuffer[18] = gridDimensions.z;
+        debugBuffer[19] = gridDimensions.w;
+    }
 }
 
 float DensityFromParticle(float3 position, int j){
@@ -168,20 +184,45 @@ void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
             for(int y=loc.y-1; y<=loc.y+1; y++){
                 for(int z=loc.z-1; z<=loc.z+1; z++){
                     int index = GetGridIndex(x,y,z);
-                    int4 voxel = grid[index];
-                    if (voxel.x!=-1){
-                        particle.density += DensityFromParticle(particle.position, voxel.x);
-                    }else if (voxel.y!=-1){
-                        particle.density += DensityFromParticle(particle.position, voxel.y);
-                    }else if (voxel.z!=-1){
-                        particle.density += DensityFromParticle(particle.position, voxel.z);
-                    }else if (voxel.w!=-1){
-                        particle.density += DensityFromParticle(particle.position, voxel.w);
+                    if (index>=0 && index<gridDimensions.w){
+                        int4 voxel = grid[index];
+                        if (voxel.x!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.x);
+                        }
+                        if (voxel.y!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.y);
+                        }
+                        if (voxel.z!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.z);
+                        }
+                        if (voxel.w!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.w);
+                        }
+                    }else if (debug==1){
+                        if (x>=0 && y>=0 && z>=0 && x<gridDimensions.x && y<gridDimensions.y && z<gridDimensions.z){
+                            debugBuffer[2] += 1;
+                            debugBuffer[6] = loc.x;
+                            debugBuffer[7] = loc.y;
+                            debugBuffer[8] = loc.z;
+                            debugBuffer[9] = index;
+                            debugBuffer[10] = id.x;
+                            debugBuffer[16] = gridDimensions.x;
+                            debugBuffer[17] = gridDimensions.y;
+                            debugBuffer[18] = gridDimensions.z;
+                            debugBuffer[19] = gridDimensions.w;
+                        }
                     }
                 }
             }
         }
+        if (particle.density == 0){
+            particle.density = mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq, 3.0f);
+            if (debug==1){
+                debugBuffer[4] += 1;
+            }
+        }
     }
+
 
     particle.pressure = gas * (particle.density - restDensity);
 
@@ -237,15 +278,33 @@ void ComputeForces (uint3 id : SV_DispatchThreadID)
             for(int y=loc.y-1; y<=loc.y+1; y++){
                 for(int z=loc.z-1; z<=loc.z+1; z++){
                     int index = GetGridIndex(x,y,z);
-                    int4 voxel = grid[index];
-                    if (voxel.x!=-1 && voxel.x!=(int)id.x){
-                        ForcesFromParticle(particle, voxel.x);
-                    }else if (voxel.y!=-1 && voxel.y!=(int)id.x){
-                        ForcesFromParticle(particle, voxel.y);
-                    }else if (voxel.z!=-1 && voxel.z!=(int)id.x){
-                        ForcesFromParticle(particle, voxel.z);
-                    }else if (voxel.w!=-1 && voxel.w!=(int)id.x){
-                        ForcesFromParticle(particle, voxel.w);
+                    if (index>=0 && index<gridDimensions.w){
+                        int4 voxel = grid[index];
+                        if (voxel.x!=-1 && voxel.x!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.x);
+                        }
+                        if (voxel.y!=-1 && voxel.y!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.y);
+                        }
+                        if (voxel.z!=-1 && voxel.z!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.z);
+                        }
+                        if (voxel.w!=-1 && voxel.w!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.w);
+                        }
+                    }else if (debug==1){
+                        if (x>=0 && y>=0 && z>=0 && x<gridDimensions.x && y<gridDimensions.y && z<gridDimensions.z){
+                            debugBuffer[3] += 1;
+                            debugBuffer[11] = loc.x;
+                            debugBuffer[12] = loc.y;
+                            debugBuffer[13] = loc.z;
+                            debugBuffer[14] = index;
+                            debugBuffer[15] = id.x;
+                            debugBuffer[16] = gridDimensions.x;
+                            debugBuffer[17] = gridDimensions.y;
+                            debugBuffer[18] = gridDimensions.z;
+                            debugBuffer[19] = gridDimensions.w;
+                        }
                     }
                 }
             }

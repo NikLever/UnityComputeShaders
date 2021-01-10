@@ -88,6 +88,7 @@ public class SPHGrid : MonoBehaviour
 
     int groupSize;
     int gridGroupSize;
+    int gridCount;
     Vector4 gridDimensions;
     Vector4 gridStartPosition;
     
@@ -135,6 +136,42 @@ public class SPHGrid : MonoBehaviour
         shader.Dispatch(kernelIntegrate, groupSize, 1, 1);
         shader.Dispatch(kernelComputeColliders, groupSize, 1, 1);
 
+        if (debug)
+        {
+            debugBuffer.GetData(debugArray);
+            /* 
+               ClearGrid
+               0 - indices out of range count
+               PopulateGrid
+               1 - indices out of range count
+               5 - full voxel count
+               ComputeDensityPressure
+               2 - indices out of range count
+               4 - zero density fix
+               6 - loc.x when grid index out of range
+               7 - loc.y when grid index out of range
+               8 - loc.z when grid index out of range
+               9 - index when grid index out of range
+               10 - id.x when grid index out of range
+               ComputeForces
+               3 - indices out of range count
+               11 - loc.x when grid index out of range
+               12 - loc.y when grid index out of range
+               13 - loc.z when grid index out of range
+               14 - index when grid index out of range
+               15 - id.x when grid index out of range
+
+               16 - gridDimensions.x
+               17 - gridDimensions.y
+               18 - gridDimensions.z
+               19 - gridDimensions.w
+            */
+            //Now reset index 0
+            debugArray[0] = debugArray[1] = debugArray[2] = debugArray[3] = debugArray[4] = debugArray[5] = 0 ;
+            debugBuffer.SetData(debugArray);
+            //particlesBuffer.GetData(particlesArray);
+        }
+
         Graphics.DrawMeshInstancedIndirect(particleMesh, 0, material, bounds, argsBuffer);
     }
 
@@ -146,11 +183,14 @@ public class SPHGrid : MonoBehaviour
                             (int)gridBounds.localScale.y,
                             (int)gridBounds.localScale.z,
                             0);
+
+        float cellSize = smoothingRadius * 2;
+        gridDimensions /= cellSize;
         gridDimensions.w = gridDimensions.x * gridDimensions.y * gridDimensions.z;
 
-        Vector3 pos = new Vector3(-0.5f, 0, -0.5f);
-        pos = gridBounds.TransformPoint(pos);
-        gridStartPosition.Set(pos.x, pos.y, pos.z, smoothingRadius * 2);
+        Vector3 halfSize = new Vector3(gridDimensions.x, gridDimensions.y, gridDimensions.z) * cellSize * 0.5f;
+        Vector3 pos = gridBounds.position * cellSize - halfSize;
+        gridStartPosition.Set(pos.x, 0, pos.z, cellSize);
 
         kernelClearGrid = shader.FindKernel("ClearGrid");
 
@@ -158,9 +198,11 @@ public class SPHGrid : MonoBehaviour
         shader.GetKernelThreadGroupSizes(kernelClearGrid, out numThreadsX, out _, out _);
         gridGroupSize = Mathf.CeilToInt((float)gridDimensions.w / (float)numThreadsX);
 
-        int gridMax = (int)numThreadsX * gridGroupSize;
+        gridCount = (int)numThreadsX * gridGroupSize;
 
-        gridBuffer = new ComputeBuffer(gridMax, SIZE_GRID_CELL);
+        Debug.Log("Grid Buffer size minus gridDimensions.w = " + (gridCount - gridDimensions.w));
+
+        gridBuffer = new ComputeBuffer(gridCount, SIZE_GRID_CELL);
     }
 
     void InitShader()
@@ -182,11 +224,20 @@ public class SPHGrid : MonoBehaviour
         argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
         argsBuffer.SetData(argsArray);
 
-        debugArray = new float[5];
-        debugBuffer = new ComputeBuffer(5, sizeof(float));
+        if (debug)
+        {
+            debugArray = new float[25];
+            debugBuffer = new ComputeBuffer(25, sizeof(float));
+            debugBuffer.SetData(debugArray);
+            shader.SetBuffer(kernelClearGrid, "debugBuffer", debugBuffer);
+            shader.SetBuffer(kernelPopulateGrid, "debugBuffer", debugBuffer);
+            shader.SetBuffer(kernelComputeDensityPressure, "debugBuffer", debugBuffer);
+            shader.SetBuffer(kernelComputeForces, "debugBuffer", debugBuffer);
+        }
 
         shader.SetInt("particleCount", particlesArray.Length);
         shader.SetInt("colliderCount", collidersArray.Length);
+        shader.SetInt("gridCount", gridCount);
         shader.SetFloat("smoothingRadius", smoothingRadius);
         shader.SetFloat("smoothingRadiusSq", smoothingRadiusSq);
         shader.SetFloat("gas", GAS);
@@ -198,8 +249,10 @@ public class SPHGrid : MonoBehaviour
         shader.SetFloat("damping", BOUND_DAMPING);
         shader.SetFloat("deltaTime", DT);
         shader.SetVector("gravity", GRAVITY);
-        shader.SetVector("gridDimensions", gridDimensions);
+        int[] gridDims = new int[] { (int)gridDimensions.x, (int)gridDimensions.y, (int)gridDimensions.z, (int)gridDimensions.w};
+        shader.SetInts("gridDimensions", gridDims);
         shader.SetVector("gridStartPosition", gridStartPosition);
+        shader.SetInt("debug", debug ? 1 : 0);
 
         shader.SetBuffer(kernelClearGrid, "grid", gridBuffer);
         shader.SetBuffer(kernelPopulateGrid, "grid", gridBuffer);
@@ -243,7 +296,7 @@ public class SPHGrid : MonoBehaviour
 
     private void OnDestroy()
     {
-        debugBuffer.Dispose();
+        if (debugBuffer!=null) debugBuffer.Dispose();
         gridBuffer.Dispose();
         particlesBuffer.Dispose();
         collidersBuffer.Dispose();
