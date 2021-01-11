@@ -1,0 +1,349 @@
+﻿#pragma kernel ClearGrid
+#pragma kernel PopulateGrid
+#pragma kernel ComputeDensityPressure
+#pragma kernel ComputeForces
+#pragma kernel Integrate
+#pragma kernel ComputeColliders
+
+struct SPHParticle
+{
+    float3 position;
+    float3 velocity;
+    float3 force;
+    float density;
+    float pressure;
+};
+
+struct SPHCollider
+{
+    float3 position;
+    float3 right;
+    float3 up;
+    float2 scale;
+};
+
+shared RWStructuredBuffer<SPHParticle> particles;
+shared StructuredBuffer<SPHCollider> colliders;
+shared RWStructuredBuffer<int4> grid;
+shared RWStructuredBuffer<float> debugBuffer;
+
+//Passed from SPHGrid.cs   
+int particleCount;
+int colliderCount;
+int gridCount;
+float smoothingRadius;
+float smoothingRadiusSq;
+float gas;
+float restDensity;
+float mass;
+float radius;
+float particleDrag;
+float particleViscosity;
+float damping;
+float deltaTime;
+float4 gravity;//w is scalar
+float4 gridStartPosition;//w is grid cell size
+int4 gridDimensions;//w is x*y*z 
+int useGrid;
+int debug;
+
+float3 penetrationNormal;
+float penetrationLength;
+float3 penetrationPosition;
+float3 forcePressure;
+float3 forceViscosity;
+
+#define PI 3.1415926536
+#define PARTICLE_THREAD_COUNT 128
+#define GRID_THREAD_COUNT 128
+
+bool Intersect(SPHCollider collider, float3 position){
+    float3 colliderProjection = collider.position - position;
+
+    penetrationNormal = cross(collider.right, collider.up);
+    penetrationLength = abs(dot(colliderProjection, penetrationNormal)) - (radius / 2.0);
+    penetrationPosition = collider.position - colliderProjection;
+
+    return penetrationLength < 0.0
+        && abs(dot(colliderProjection, collider.right)) < collider.scale.x
+        && abs(dot(colliderProjection, collider.up)) < collider.scale.y;
+}
+
+float3 DampVelocity(SPHCollider collider, float3 velocity, float drag)
+{
+    float3 newVelocity = dot(velocity, penetrationNormal) * penetrationNormal * damping
+                    + dot(velocity, collider.right) * collider.right * drag
+                    + dot(velocity, collider.up) * collider.up * drag;
+
+    float3 forward = float3(0,0,1);
+    float3 right = float3(1,0,0);
+    float3 up = float3(0,1,0);
+
+    return dot(newVelocity, forward) * forward
+            + dot(newVelocity, right) * right
+            + dot(newVelocity, up) * up;
+}
+
+[numthreads(GRID_THREAD_COUNT,1,1)]
+void ClearGrid (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x>=0 && id.x<gridCount){
+	    int4 voxel = grid[id.x];
+	    voxel.x = voxel.y = voxel.z = voxel.w = -1;
+	    grid[id.x] = voxel;
+    }else if (debug==1){
+        debugBuffer[0] += 1;
+        debugBuffer[16] = gridDimensions.x;
+        debugBuffer[17] = gridDimensions.y;
+        debugBuffer[18] = gridDimensions.z;
+        debugBuffer[19] = gridDimensions.w;
+        debugBuffer[20] = id.x;
+    }
+}
+
+// Returns the grid index for particle p
+int GetParticleGridIndex(int id) {
+	int3 gridLocation = (particles[id].position - gridStartPosition.xyz) / gridStartPosition.w;
+	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
+}
+
+// Returns the grid location for particle p
+int3 GetParticleGridLocation(int id) {
+	return (particles[id].position - gridStartPosition.xyz) / gridStartPosition.w;
+}
+
+// Converts a grid location to a grid index
+int GetGridIndex(int x, int y, int z) {
+	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void PopulateGrid (uint3 id : SV_DispatchThreadID)
+{
+	int index = GetParticleGridIndex(id.x);
+	// clamp gridIndex
+	if (index < gridDimensions.w && index >= 0){
+		int4 voxel = grid[index];
+		if (voxel.x==-1){
+			voxel.x = id.x;
+		}else if (voxel.y==-1){
+			voxel.y = id.x;
+		}else if (voxel.z==-1){
+			voxel.z = id.x;
+		}else if (voxel.w==-1){
+			voxel.w = id.x;
+		}else if (debug==1){
+			debugBuffer[5] = debugBuffer[5] + 1;
+		}
+
+		grid[index] = voxel;
+	}else if (debug==1){
+        debugBuffer[1] += 1;
+        debugBuffer[16] = gridDimensions.x;
+        debugBuffer[17] = gridDimensions.y;
+        debugBuffer[18] = gridDimensions.z;
+        debugBuffer[19] = gridDimensions.w;
+    }
+}
+
+float DensityFromParticle(float3 position, int j){
+    float3 relativePosition = particles[j].position - position;
+    float rP2 = dot(relativePosition, relativePosition);
+
+    float result = 0;
+
+    if (rP2 < smoothingRadiusSq)
+    {
+        result = mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq - rP2, 3.0f);
+    }
+
+    return result;
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
+{
+    SPHParticle particle = particles[id.x];
+
+    particle.density = 0.0f;
+
+    if (useGrid==0){
+        for (int j = 0; j < particleCount; j++)
+        {
+            float3 relativePosition = particles[j].position - particle.position;
+            float rP2 = dot(relativePosition, relativePosition);
+
+            if (rP2 < smoothingRadiusSq)
+            {
+                particle.density += mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq - rP2, 3.0f);
+            }
+        }
+    }else{
+        int3 loc = GetParticleGridLocation(id.x);
+        for(int x=loc.x-1; x<=loc.x+1; x++){
+            for(int y=loc.y-1; y<=loc.y+1; y++){
+                for(int z=loc.z-1; z<=loc.z+1; z++){
+                    int index = GetGridIndex(x,y,z);
+                    if (index>=0 && index<gridDimensions.w){
+                        int4 voxel = grid[index];
+                        if (voxel.x!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.x);
+                        }
+                        if (voxel.y!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.y);
+                        }
+                        if (voxel.z!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.z);
+                        }
+                        if (voxel.w!=-1){
+                            particle.density += DensityFromParticle(particle.position, voxel.w);
+                        }
+                    }else if (debug==1){
+                        if (x>=0 && y>=0 && z>=0 && x<gridDimensions.x && y<gridDimensions.y && z<gridDimensions.z){
+                            debugBuffer[2] += 1;
+                            debugBuffer[6] = loc.x;
+                            debugBuffer[7] = loc.y;
+                            debugBuffer[8] = loc.z;
+                            debugBuffer[9] = index;
+                            debugBuffer[10] = id.x;
+                            debugBuffer[16] = gridDimensions.x;
+                            debugBuffer[17] = gridDimensions.y;
+                            debugBuffer[18] = gridDimensions.z;
+                            debugBuffer[19] = gridDimensions.w;
+                        }
+                    }
+                }
+            }
+        }
+        if (particle.density == 0){
+            particle.density = mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq, 3.0f);
+            if (debug==1){
+                debugBuffer[4] += 1;
+            }
+        }
+    }
+
+
+    particle.pressure = gas * (particle.density - restDensity);
+
+    particles[id.x] = particle;
+}
+
+void ForcesFromParticle(SPHParticle particle, int j){
+    SPHParticle particleJ = particles[j];
+
+    float3 relativePosition = particleJ.position - particle.position;
+    float rP2 = dot(relativePosition, relativePosition);
+        
+    if (rP2 < smoothingRadiusSq)
+    {
+        float r = length(relativePosition);
+        float3 rPN = normalize(relativePosition);
+
+        forcePressure += -rPN * mass * (particle.pressure + particleJ.pressure) / (2.0f * particleJ.density) * (-45.0f / (PI * pow(smoothingRadius, 6.0f))) * pow(smoothingRadius - r, 2.0f);
+        forceViscosity += particleViscosity * mass * (particleJ.velocity - particle.velocity) / particleJ.density * (45.0f / (PI * pow(smoothingRadius, 6.0f))) * (smoothingRadius - r);
+    }
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void ComputeForces (uint3 id : SV_DispatchThreadID)
+{
+    forcePressure = 0;
+    forceViscosity = 0;
+    SPHParticle particle = particles[id.x];
+
+    if (useGrid==0){
+        for (int j = 0; j < particleCount; j++)
+        {
+            if (id.x == (uint)j) continue;
+
+            SPHParticle particleJ = particles[j];
+
+            float3 relativePosition = particleJ.position - particle.position;
+            float rP2 = dot(relativePosition, relativePosition);
+        
+            if (rP2 < smoothingRadiusSq)
+            {
+                float r = length(relativePosition);
+                float3 rPN = normalize(relativePosition);
+
+                forcePressure += -rPN * mass * (particle.pressure + particleJ.pressure) / (2.0f * particleJ.density) * (-45.0f / (PI * pow(smoothingRadius, 6.0f))) * pow(smoothingRadius - r, 2.0f);
+                forceViscosity += particleViscosity * mass * (particleJ.velocity - particle.velocity) / particleJ.density * (45.0f / (PI * pow(smoothingRadius, 6.0f))) * (smoothingRadius - r);
+            }
+        }
+    }else{
+        int3 loc = GetParticleGridLocation(id.x);
+        
+        for(int x=loc.x-1; x<=loc.x+1; x++){
+            for(int y=loc.y-1; y<=loc.y+1; y++){
+                for(int z=loc.z-1; z<=loc.z+1; z++){
+                    int index = GetGridIndex(x,y,z);
+                    if (index>=0 && index<gridDimensions.w){
+                        int4 voxel = grid[index];
+                        if (voxel.x!=-1 && voxel.x!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.x);
+                        }
+                        if (voxel.y!=-1 && voxel.y!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.y);
+                        }
+                        if (voxel.z!=-1 && voxel.z!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.z);
+                        }
+                        if (voxel.w!=-1 && voxel.w!=(int)id.x){
+                            ForcesFromParticle(particle, voxel.w);
+                        }
+                    }else if (debug==1){
+                        if (x>=0 && y>=0 && z>=0 && x<gridDimensions.x && y<gridDimensions.y && z<gridDimensions.z){
+                            debugBuffer[3] += 1;
+                            debugBuffer[11] = loc.x;
+                            debugBuffer[12] = loc.y;
+                            debugBuffer[13] = loc.z;
+                            debugBuffer[14] = index;
+                            debugBuffer[15] = id.x;
+                            debugBuffer[16] = gridDimensions.x;
+                            debugBuffer[17] = gridDimensions.y;
+                            debugBuffer[18] = gridDimensions.z;
+                            debugBuffer[19] = gridDimensions.w;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    float3 forceGravity = gravity.xyz * particle.density * gravity.w;
+
+    particle.force = forcePressure + forceViscosity + forceGravity;
+
+    particles[id.x] = particle;
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void Integrate (uint3 id : SV_DispatchThreadID)
+{
+    SPHParticle particle = particles[id.x];
+
+    particle.velocity += deltaTime * particle.force / particle.density;
+    particle.position += deltaTime * particle.velocity;
+
+    particles[id.x] = particle;
+}
+
+[numthreads(PARTICLE_THREAD_COUNT,1,1)]
+void ComputeColliders (uint3 id : SV_DispatchThreadID)
+{
+    SPHParticle particle = particles[id.x];
+    
+    for (int i = 0; i < colliderCount; i++)
+    {
+        SPHCollider collider = colliders[i];
+
+        if (Intersect(collider, particle.position))
+        {
+            particle.velocity = DampVelocity(collider, particle.velocity, 1.0f - particleDrag);
+            particle.position = penetrationPosition - penetrationNormal * abs(penetrationLength);
+        }
+    }
+
+    particles[id.x] = particle;
+}

@@ -408,6 +408,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c5c7f45c18e24e0a99ba5f1fc41a699, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  material: {fileID: 0}
 --- !u!195 &1500874293
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -463,15 +464,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mesh: {fileID: -462981019419857548, guid: c61a46b1fba4e4858a25c0da491e87d9, type: 3}
-  material: {fileID: 2100000, guid: ab0aa8a7aaf0542a68410833c97fe94f, type: 2}
+  material: {fileID: 2100000, guid: 9c4ec8ff05fce408da7abd322cf72f6d, type: 2}
   visualizeNoise: {fileID: 2100000, guid: 64be14a0480d049e0ba65fbca40d8bc1, type: 2}
   viewNoise: 0
   shader: {fileID: 7200000, guid: 77b834b103c254a8099bcd04e98c8c11, type: 3}
   density: 0.838
   scale: 0.42
-  windSpeed: 0.18
-  windDirection: 130
-  windScale: 105
   maxLean: 45
   trampler: {fileID: 1500874291}
   trampleRadius: 1
