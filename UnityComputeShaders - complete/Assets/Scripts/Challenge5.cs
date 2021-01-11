@@ -117,14 +117,12 @@ public class Challenge5 : MonoBehaviour {
 	private int frameCounter;
 
 	void Start() {
-		//Application.targetFrameRate = 300;
-
 		VoxelizeMesh voxelizeMesh = GetComponent<VoxelizeMesh>();
+		voxelizeMesh.Voxelize(voxelizeMesh.meshToVoxelize);
+		
 		mesh = voxelizeMesh.meshToVoxelize;
-		voxelizeMesh.Voxelize(mesh);
 		particleInitialPositions = voxelizeMesh.PositionList;
 		particlesPerBody = particleInitialPositions.Count;
-		
 		vertexCount = mesh.GetIndexCount(0);
 		particleDiameter = voxelizeMesh.ParticleSize;
 

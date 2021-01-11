@@ -38,10 +38,10 @@
             float c = cos(theta);
             float s = sin(theta);
             return float4x4(
-                1, 0,  0, pos.x,
-                0, c, -s, pos.y,
-                0, s,  c, pos.z,
-                0, 0,  0, 1
+                c,-s, 0, pos.x,
+                s, c, 0, pos.y,
+                0, 0, 1, pos.z,
+                0, 0, 0, 1
             );
         }
         

@@ -79,6 +79,8 @@ public class GrassBlades : MonoBehaviour
                 //4. Define the indices array
 
                 //5. Assign the mesh properties using the arrays
+                //   for indices use
+                //   mesh.SetIndices( indices, MeshTopology.Triangles, 0 );
 
             }
 
