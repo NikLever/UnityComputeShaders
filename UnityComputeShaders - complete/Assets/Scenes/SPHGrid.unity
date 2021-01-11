@@ -147,7 +147,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9556913}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -863,17 +863,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a03d78e026757418e95428fbebfaf755, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particleRadius: 1
-  smoothingRadius: 1
+  particleRadius: 2
+  smoothingRadius: 2
   restDensity: 15
   particleMass: 0.1
   particleViscosity: 1
   particleDrag: 0.025
   particleMesh: {fileID: 4300000, guid: 823956ce1b683574ca519f1f470eb81d, type: 3}
-  particleCount: 50000
-  rowSize: 40
+  particleCount: 50
+  rowSize: 3
   shader: {fileID: 7200000, guid: 4e9c5c033b41646efb0160a942fa5644, type: 3}
-  material: {fileID: 2100000, guid: c7696bd9a45e44d37888848b0085bed1, type: 2}
+  material: {fileID: 2100000, guid: b8fa295f9b3d6434aabe14c34a207892, type: 2}
   gridBounds: {fileID: 9556917}
   useGrid: 1
   debug: 1
