@@ -170,8 +170,8 @@ public class SPHGrid : MonoBehaviour
             debugBuffer.SetData(debugArray);
             particlesBuffer.GetData(particlesArray);
 
-            Debug.Log(particlesArray[0].density + " " + particlesArray[0].force + " " + particlesArray[0].velocity + " " +
-                particlesArray[0].gridLocation + " " + particlesArray[0].gridIndex);
+            Debug.Log("density:" + particlesArray[0].density + " force:" + particlesArray[0].force + " velocity:" + particlesArray[0].velocity +
+                " position:" + particlesArray[0].position + " gridLocation:" + particlesArray[0].gridLocation + " gridIndex:" + particlesArray[0].gridIndex);
         }
 
         Graphics.DrawMeshInstancedIndirect(particleMesh, 0, material, bounds, argsBuffer);
