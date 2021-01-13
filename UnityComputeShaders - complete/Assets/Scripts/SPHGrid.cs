@@ -14,6 +14,9 @@ public class SPHGrid : MonoBehaviour
         public float density;
         public float pressure;
 
+        public Vector3Int gridLocation;
+        public int gridIndex;
+
         public SPHParticle(Vector3 pos)
         {
             position = pos;
@@ -21,9 +24,11 @@ public class SPHGrid : MonoBehaviour
             force = Vector3.zero;
             density = 0.0f;
             pressure = 0.0f;
+            gridLocation = Vector3Int.zero;
+            gridIndex = 0;
         }
     }
-    int SIZE_SPHPARTICLE = 11 * sizeof(float);
+    int SIZE_SPHPARTICLE = 11 * sizeof(float) + 4 * sizeof(int);
 
     private struct SPHCollider
     {
@@ -148,28 +153,25 @@ public class SPHGrid : MonoBehaviour
                ComputeDensityPressure
                2 - indices out of range count
                4 - zero density fix
-               6 - loc.x when grid index out of range
-               7 - loc.y when grid index out of range
-               8 - loc.z when grid index out of range
-               9 - index when grid index out of range
-               10 - id.x when grid index out of range
                ComputeForces
                3 - indices out of range count
-               11 - loc.x when grid index out of range
-               12 - loc.y when grid index out of range
-               13 - loc.z when grid index out of range
-               14 - index when grid index out of range
-               15 - id.x when grid index out of range
-
+           
                16 - gridDimensions.x
                17 - gridDimensions.y
                18 - gridDimensions.z
                19 - gridDimensions.w
             */
+            if (debugArray[1] != 0)
+            {
+                Debug.Log("PopulateGrid particle out of range");
+            }
             //Now reset index 0
             debugArray[0] = debugArray[1] = debugArray[2] = debugArray[3] = debugArray[4] = debugArray[5] = 0 ;
             debugBuffer.SetData(debugArray);
-            //particlesBuffer.GetData(particlesArray);
+            particlesBuffer.GetData(particlesArray);
+
+            Debug.Log("density:" + particlesArray[0].density + " force:" + particlesArray[0].force + " velocity:" + particlesArray[0].velocity +
+                " position:" + particlesArray[0].position + " gridLocation:" + particlesArray[0].gridLocation + " gridIndex:" + particlesArray[0].gridIndex);
         }
 
         Graphics.DrawMeshInstancedIndirect(particleMesh, 0, material, bounds, argsBuffer);
@@ -200,7 +202,9 @@ public class SPHGrid : MonoBehaviour
 
         gridCount = (int)numThreadsX * gridGroupSize;
 
-        Debug.Log("Grid Buffer size minus gridDimensions.w = " + (gridCount - gridDimensions.w));
+        Debug.Log("gridDimensions:" + gridDimensions);
+        Debug.Log("gridStartPosition:" + gridStartPosition);
+        //Debug.Log("Grid Buffer size minus gridDimensions.w = " + (gridCount - gridDimensions.w));
 
         gridBuffer = new ComputeBuffer(gridCount, SIZE_GRID_CELL);
     }
@@ -224,16 +228,13 @@ public class SPHGrid : MonoBehaviour
         argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
         argsBuffer.SetData(argsArray);
 
-        if (debug)
-        {
-            debugArray = new float[25];
-            debugBuffer = new ComputeBuffer(25, sizeof(float));
-            debugBuffer.SetData(debugArray);
-            shader.SetBuffer(kernelClearGrid, "debugBuffer", debugBuffer);
-            shader.SetBuffer(kernelPopulateGrid, "debugBuffer", debugBuffer);
-            shader.SetBuffer(kernelComputeDensityPressure, "debugBuffer", debugBuffer);
-            shader.SetBuffer(kernelComputeForces, "debugBuffer", debugBuffer);
-        }
+        debugArray = new float[25];
+        debugBuffer = new ComputeBuffer(25, sizeof(float));
+        debugBuffer.SetData(debugArray);
+        shader.SetBuffer(kernelClearGrid, "debugBuffer", debugBuffer);
+        shader.SetBuffer(kernelPopulateGrid, "debugBuffer", debugBuffer);
+        shader.SetBuffer(kernelComputeDensityPressure, "debugBuffer", debugBuffer);
+        shader.SetBuffer(kernelComputeForces, "debugBuffer", debugBuffer);
 
         shader.SetInt("particleCount", particlesArray.Length);
         shader.SetInt("colliderCount", collidersArray.Length);
