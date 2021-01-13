@@ -462,7 +462,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 749e0f05bde4149c5b455403c4221e35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mesh: {fileID: -462981019419857548, guid: c61a46b1fba4e4858a25c0da491e87d9, type: 3}
+  mesh: {fileID: 8254687373856176130, guid: c61a46b1fba4e4858a25c0da491e87d9, type: 3}
   material: {fileID: 2100000, guid: ab0aa8a7aaf0542a68410833c97fe94f, type: 2}
   shader: {fileID: 7200000, guid: 04389d5c494d9490c8048d72a758223f, type: 3}
   density: 0.957
