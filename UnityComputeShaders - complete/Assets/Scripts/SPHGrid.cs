@@ -67,6 +67,14 @@ public class SPHGrid : MonoBehaviour
     private const float DT = 0.0008f;
     private const float BOUND_DAMPING = -0.5f;
     const float GAS = 2000.0f;
+
+    struct GridCell
+    {
+        public int x;
+        public int y;
+        public int z;
+        public int w;
+    };
     const int SIZE_GRID_CELL = 4 * sizeof(int);
 
     private float smoothingRadiusSq;
@@ -78,6 +86,7 @@ public class SPHGrid : MonoBehaviour
     ComputeBuffer collidersBuffer;
     uint[] argsArray = { 0, 0, 0, 0, 0 };
     ComputeBuffer argsBuffer;
+    GridCell[] gridArray;
     ComputeBuffer gridBuffer;
     float[] debugArray;
     ComputeBuffer debugBuffer;
@@ -147,6 +156,7 @@ public class SPHGrid : MonoBehaviour
             /* 
                ClearGrid
                0 - indices out of range count
+               6 - grid cleared count
                PopulateGrid
                1 - indices out of range count
                5 - full voxel count
@@ -166,9 +176,11 @@ public class SPHGrid : MonoBehaviour
                 Debug.Log("PopulateGrid particle out of range");
             }
             //Now reset index 0
-            debugArray[0] = debugArray[1] = debugArray[2] = debugArray[3] = debugArray[4] = debugArray[5] = 0 ;
+            debugArray[0] = debugArray[1] = debugArray[2] = debugArray[3] = debugArray[4] = debugArray[5] = debugArray[6] = 0;
             debugBuffer.SetData(debugArray);
             particlesBuffer.GetData(particlesArray);
+            if (gridArray == null) gridArray = new GridCell[gridCount];
+            gridBuffer.GetData(gridArray);
 
             Debug.Log("density:" + particlesArray[0].density + " force:" + particlesArray[0].force + " velocity:" + particlesArray[0].velocity +
                 " position:" + particlesArray[0].position + " gridLocation:" + particlesArray[0].gridLocation + " gridIndex:" + particlesArray[0].gridIndex);

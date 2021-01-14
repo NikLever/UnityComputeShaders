@@ -90,6 +90,9 @@ void ClearGrid (uint3 id : SV_DispatchThreadID)
 	    int4 voxel = grid[id.x];
 	    voxel.x = voxel.y = voxel.z = voxel.w = -1;
 	    grid[id.x] = voxel;
+        if (debug==1) debugBuffer[6]++;
+    }else if (debug==1){
+        debugBuffer[0]++;
     }
 }
 
@@ -101,12 +104,21 @@ int GetParticleGridIndex(int id) {
 
 // Returns the grid location for particle p
 int3 GetParticleGridLocation(int id) {
-	return (particles[id].position - gridStartPosition.xyz) / gridStartPosition.w;
+    return particles[id].gridLocation.xyz;
+	//return (particles[id].position - gridStartPosition.xyz) / gridStartPosition.w;
 }
 
 // Converts a grid location to a grid index
 int GetGridIndex(int x, int y, int z) {
 	return x + (gridDimensions.x * y) + (gridDimensions.x * gridDimensions.y * z);
+}
+
+int3 GetGridLocationFromIndex(int id){
+    int x = gridDimensions.w % (gridDimensions.y * gridDimensions.z);
+    int y = 
+    int3 loc = int3(
+        
+    )
 }
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]

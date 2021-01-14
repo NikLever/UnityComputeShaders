@@ -7,8 +7,6 @@ using UnityEngine.AI;
 [RequireComponent(typeof(Animator))]
 public class ArcherController : MonoBehaviour
 {
-    public Material material;
-
     Animator anim; 
     Camera cam;
     NavMeshAgent agent;
@@ -33,11 +31,6 @@ public class ArcherController : MonoBehaviour
 
             if (Physics.Raycast(ray, out RaycastHit hit)){
                 agent.destination = hit.point;
-                if (material)
-                {
-                    Vector4 pos = new Vector4(hit.point.x, hit.point.y, hit.point.z, 0);
-                    material.SetVector("_Position", pos);
-                }
             }
         }
 
