@@ -13,6 +13,7 @@ struct SPHParticle
     float density;
     float pressure;
     int4 gridLocation;
+    int4 voxel;
 };
 
 struct SPHCollider
@@ -53,8 +54,8 @@ float penetrationLength;
 float3 penetrationPosition;
 
 #define PI 3.1415926536
-#define PARTICLE_THREAD_COUNT 128
-#define GRID_THREAD_COUNT 128
+#define PARTICLE_THREAD_COUNT 8
+#define GRID_THREAD_COUNT 8
 
 bool Intersect(SPHCollider collider, float3 position){
     float3 colliderProjection = collider.position - position;
@@ -95,12 +96,14 @@ void ClearGrid (uint3 id : SV_DispatchThreadID)
 
 // Returns the grid index for particle p
 int GetParticleGridIndex(int id) {
+    if (id<0 || id>=particleCount) return -1;
 	int3 gridLocation = (particles[id].position - gridStartPosition.xyz) / gridStartPosition.w;
 	return gridLocation.x + gridDimensions.x * gridLocation.y + (gridDimensions.x * gridDimensions.y * gridLocation.z);
 }
 
 // Returns the grid location for particle p
 int3 GetParticleGridLocation(int id) {
+    if (id<0 || id>=particleCount) return -1;
 	return (particles[id].position - gridStartPosition.xyz) / gridStartPosition.w;
 }
 
@@ -115,25 +118,35 @@ void PopulateGrid (uint3 id : SV_DispatchThreadID)
 	int index = GetParticleGridIndex(id.x);
 	// clamp gridIndex
 	if (index < gridDimensions.w && index >= 0){
-		int4 voxel = grid[index];
-        for(int i=0; i<4; i++){
-            if (voxel[i]==-1){
-                voxel[i] = id.x;
-                break;
-            }
+        int pId = id.x;
+		int originalValue = 0;
+		InterlockedCompareExchange(grid[index].x, -1, pId, originalValue);
+		if (originalValue != -1)
+			InterlockedCompareExchange(grid[index].y, -1, pId, originalValue);
+		if (originalValue != -1)
+			InterlockedCompareExchange(grid[index].z, -1, pId, originalValue);
+		if (originalValue != -1)
+			InterlockedCompareExchange(grid[index].w, -1, pId, originalValue);
+
+        if (debug==1){
+            SPHParticle particle = particles[id.x];
+            particle.gridLocation.xyz = GetParticleGridLocation(id.x);
+            particle.gridLocation.w = index;
+            particle.voxel = grid[index];
+            particles[id.x] = particle;
         }
+	}
+}
 
-		grid[index] = voxel;
+float DensityFromParticle(int jId, float3 position){
+    float density = 0;
+    float3 relativePosition = particles[jId].position - position;
+    float rP2 = dot(relativePosition, relativePosition);
 
-        particles[id.x].gridLocation.xyz = GetParticleGridLocation(id.x);
-        particles[id.x].gridLocation.w = index;
-	}else if (debug==1){
-        debugBuffer[1] += 1;
-        debugBuffer[16] = gridDimensions.x;
-        debugBuffer[17] = gridDimensions.y;
-        debugBuffer[18] = gridDimensions.z;
-        debugBuffer[19] = gridDimensions.w;
-    }
+    if (rP2 < smoothingRadiusSq)
+         density += mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq - rP2, 3.0f);
+     
+    return density;
 }
 
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
@@ -162,32 +175,25 @@ void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
                     int index = GetGridIndex(x,y,z);
                     if (index>=0 && index<gridDimensions.w){
                         int4 voxel = grid[index];
-                        for(int i=0; i<4; i++){
-                            index = voxel[i];
-                            if (index!=-1){
-                                float3 relativePosition = particles[index].position - particle.position;
-                                float rP2 = dot(relativePosition, relativePosition);
-
-                                if (rP2 < smoothingRadiusSq)
-                                {
-                                    particle.density += mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq - rP2, 3.0f);
-                                }
-                            }
+                        if (voxel.x!=-1){
+                            particle.density += DensityFromParticle(voxel.x, particle.position);
                         }
-                    }else if (debug==1){
-                        if (x>=0 && y>=0 && z>=0 && x<gridDimensions.x && y<gridDimensions.y && z<gridDimensions.z){
-                            debugBuffer[2] += 1;
+                        if (voxel.y!=-1){
+                            particle.density += DensityFromParticle(voxel.y, particle.position);
+                        }
+                        if (voxel.z!=-1){
+                            particle.density += DensityFromParticle(voxel.z, particle.position);
+                        }
+                        if (voxel.w!=-1){
+                            particle.density += DensityFromParticle(voxel.w, particle.position);
                         }
                     }
                 }
             }
         }
-        if (particle.density == 0){
-            particle.density = mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq, 3.0f);
-            if (debug==1){
-                debugBuffer[4] += 1;
-            }
-        }
+        //if (particle.density == 0){
+        //    particle.density = mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq, 3.0f);
+        //}
     }
 
 
@@ -196,12 +202,31 @@ void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
     particles[id.x] = particle;
 }
 
+float3 ForceFromParticle( int jId, SPHParticle particle){
+    SPHParticle particleJ = particles[jId]; 
+
+    float3 force = 0;
+
+    float3 relativePosition = particleJ.position - particle.position;
+    float rP2 = dot(relativePosition, relativePosition);
+        
+    if (rP2 < smoothingRadiusSq)
+    {
+        float r = length(relativePosition);
+        float3 rPN = normalize(relativePosition);
+
+        force += -rPN * mass * (particle.pressure + particleJ.pressure) / (2.0f * particleJ.density) * (-45.0f / (PI * pow(smoothingRadius, 6.0f))) * pow(smoothingRadius - r, 2.0f);
+        force += particleViscosity * mass * (particleJ.velocity - particle.velocity) / particleJ.density * (45.0f / (PI * pow(smoothingRadius, 6.0f))) * (smoothingRadius - r);
+    }
+
+    return force;
+}
+
 [numthreads(PARTICLE_THREAD_COUNT,1,1)]
 void ComputeForces (uint3 id : SV_DispatchThreadID)
 {
-    float3 forcePressure = 0;
-    float3 forceViscosity = 0;
     SPHParticle particle = particles[id.x];
+    float3 force = 0;
 
     if (useGrid==0){
         for (int j = 0; j < particleCount; j++)
@@ -218,8 +243,8 @@ void ComputeForces (uint3 id : SV_DispatchThreadID)
                 float r = length(relativePosition);
                 float3 rPN = normalize(relativePosition);
 
-                forcePressure += -rPN * mass * (particle.pressure + particleJ.pressure) / (2.0f * particleJ.density) * (-45.0f / (PI * pow(smoothingRadius, 6.0f))) * pow(smoothingRadius - r, 2.0f);
-                forceViscosity += particleViscosity * mass * (particleJ.velocity - particle.velocity) / particleJ.density * (45.0f / (PI * pow(smoothingRadius, 6.0f))) * (smoothingRadius - r);
+                force += -rPN * mass * (particle.pressure + particleJ.pressure) / (2.0f * particleJ.density) * (-45.0f / (PI * pow(smoothingRadius, 6.0f))) * pow(smoothingRadius - r, 2.0f);
+                force += particleViscosity * mass * (particleJ.velocity - particle.velocity) / particleJ.density * (45.0f / (PI * pow(smoothingRadius, 6.0f))) * (smoothingRadius - r);
             }
         }
     }else{
@@ -231,26 +256,14 @@ void ComputeForces (uint3 id : SV_DispatchThreadID)
                     int index = GetGridIndex(x,y,z);
                     if (index>=0 && index<gridDimensions.w){
                         int4 voxel = grid[index];
-                        for(int i=0; i<4; i++){
-                            if (voxel[i]!=-1 && voxel[i]!=(int)id.x){
-                                SPHParticle particleJ = particles[voxel[i]]; 
-
-                                float3 relativePosition = particleJ.position - particle.position;
-                                float rP2 = dot(relativePosition, relativePosition);
-        
-                                if (rP2 < smoothingRadiusSq)
-                                {
-                                    float r = length(relativePosition);
-                                    float3 rPN = normalize(relativePosition);
-
-                                    forcePressure += -rPN * mass * (particle.pressure + particleJ.pressure) / (2.0f * particleJ.density) * (-45.0f / (PI * pow(smoothingRadius, 6.0f))) * pow(smoothingRadius - r, 2.0f);
-                                    forceViscosity += particleViscosity * mass * (particleJ.velocity - particle.velocity) / particleJ.density * (45.0f / (PI * pow(smoothingRadius, 6.0f))) * (smoothingRadius - r);
-                                }
-                            }
-                        }
-                    }else if (debug==1){
-                        if (x>=0 && y>=0 && z>=0 && x<gridDimensions.x && y<gridDimensions.y && z<gridDimensions.z){
-                            debugBuffer[3] += 1;
+                        if (voxel.x!=-1 && voxel.x!=(int)id.x){
+                            force += ForceFromParticle(voxel.x, particle);
+                        }else if (voxel.y!=-1 && voxel.y!=(int)id.x){
+                            force += ForceFromParticle(voxel.y, particle);
+                        }else if (voxel.z!=-1 && voxel.z!=(int)id.x){
+                            force += ForceFromParticle(voxel.z, particle);
+                        }else if (voxel.w!=-1 && voxel.w!=(int)id.x){
+                            force += ForceFromParticle(voxel.w, particle);
                         }
                     }
                 }
@@ -261,7 +274,7 @@ void ComputeForces (uint3 id : SV_DispatchThreadID)
 
     float3 forceGravity = gravity.xyz * particle.density * gravity.w;
 
-    particle.force = forcePressure + forceViscosity + forceGravity;
+    particle.force = force + forceGravity;
 
     particles[id.x] = particle;
 }
