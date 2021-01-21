@@ -54,7 +54,7 @@ Shader "Hidden/StableFluids"
         //rgb = sin(float3(3.43, 4.43, 3.84) * rgb +
         //          float3(0.12, 0.23, 0.44) * _Time.y) * 0.5 + 0.5;
 
-        return half4(GammaToLinearSpace(rgb), 1);
+        return half4(rgb, 1);
     }
 
     ENDCG

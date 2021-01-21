@@ -266,7 +266,7 @@ MonoBehaviour:
   gridSize: {x: 50, y: 25, z: 50}
   gridPosition: {x: 0, y: 5, z: 0}
   useGrid: 1
-  rigidBodyCount: 300
+  rigidBodyCount: 3000
   stepsPerUpdate: 10
 --- !u!4 &411714672
 Transform:
