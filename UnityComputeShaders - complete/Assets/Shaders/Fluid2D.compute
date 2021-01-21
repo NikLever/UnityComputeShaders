@@ -19,7 +19,6 @@ float ForceExponent;
 
 // U (velocity field)
 Texture2D<float2> U_in;
-SamplerState samplerU_in;
 RWTexture2D<float2> U_out;
 
 // W (velocity field; working)
@@ -32,10 +31,6 @@ RWTexture2D<float> DivW_out;
 // P (pressure field)
 Texture2D<float> P_in;
 RWTexture2D<float> P_out;
-
-// Color map
-Texture2D<half4> C_in;
-RWTexture2D<half4> C_out;
 
 // Jacobi method arguments
 float Alpha, Beta;

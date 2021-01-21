@@ -39,6 +39,7 @@
                 float density;
                 float pressure;
                 int4 gridLocation;
+                int4 voxel;
             };
 
             StructuredBuffer<SPHParticle> particles;

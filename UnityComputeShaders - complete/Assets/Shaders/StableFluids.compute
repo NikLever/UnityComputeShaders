@@ -1,28 +1,91 @@
-﻿#pragma kernel advect
-#pragma kernel force
-#pragma kernel project
-#pragma kernel diffuse
+﻿//
 
-[numthreads(8,8,1)]
-void advect (uint3 id : SV_DispatchThreadID)
+#pragma kernel Advect
+#pragma kernel Swap
+#pragma kernel Jacobi1
+#pragma kernel Jacobi2
+#pragma kernel Force
+#pragma kernel ProjectInit
+#pragma kernel Project
+
+struct FluidCell
 {
-    
+    float density;
+    float d;
+    float2 velocity;
+    float2 v;
+};
+
+shared RWStructuredBuffer<FluidCell> fluid;
+int resolution;
+int fluidMax;
+float deltaTime;
+float viscosity;
+float alpha;
+float beta;
+float2 forceOrigin;
+float2 forceVector;
+float forceExponent;
+int swapId;
+
+uint2 GetCellLocation(uint id){
+    uint y = id/resolution;
+    return uint2(id - y*resolution, y);
 }
 
-[numthreads(8,8,1)]
-void force (uint3 id : SV_DispatchThreadID)
+[numthreads(8, 1, 1)]
+void SetBoundary(uint id : SV_DispatchThreadID)
 {
-    
+    uint2 loc = GetCellLocation(id.x);
+
+    if (loc.x==0){
+        if (loc.y==0){
+            //Bottom left corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(1,0)] + fluid[GetCellIndex(0, 1)]);
+        }else if (loc.y==resolution-1){
+            //Top left corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(1,resolution-1)] + fluid[GetCellIndex(0, resolution-2)]);
+        }else{
+            //Left edge
+            fluid[id.x] = fluid[GetCellIndex(1,loc.y)];
+        }   
+    }else if (loc.x==resolution-1){
+        if (loc.y==0){
+            //Bottom right corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(resolution-2,0)] + fluid[GetCellIndex(resolution-1, 1)]);
+        }else if (loc.y==resolution-1){
+            //Top right corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(1,resolution-1)] + fluid[GetCellIndex(0, resolution-2)]);
+        }else{
+            //Right edge   
+            fluid[id.x] = fluid[GetCellIndex(resolution-2,loc.y)];
+        }
+    }else if (loc.y==0){
+        //Bottom edge
+        fluid[id.x] = fluid[GetCellIndex(loc.x, 1)];
+    }else if (loc.y==resolution-1){
+        //Top edge
+        fluid[id.x] = fluid[GetCellIndex(loc.x, resolution-2)];
 }
 
-[numthreads(8,8,1)]
-void project (uint3 id : SV_DispatchThreadID)
+[numthreads(8, 1, 1)]
+void LinSolve2(uint id : SV_DispatchThreadID)
 {
-    
+    if (id.x < fluidMax) return;
+
+    fluid[id.x].velocity =
+        (x0[IX(i, j, m)]
+            + a*(    x[IX(i+1, j  , m  )]
+                    +x[IX(i-1, j  , m  )]
+                    +x[IX(i  , j+1, m  )]
+                    +x[IX(i  , j-1, m  )]
+                    +x[IX(i  , j  , m+1)]
+                    +x[IX(i  , j  , m-1)]
+            )) * cRecip;
+                }
+            }
+        }
+        set_bnd(b, x, N);
+    }
 }
 
-[numthreads(8,8,1)]
-void diffuse (uint3 id : SV_DispatchThreadID)
-{
-    
-}

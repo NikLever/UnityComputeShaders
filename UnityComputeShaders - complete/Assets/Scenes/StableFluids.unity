@@ -155,9 +155,9 @@ MonoBehaviour:
   viscosity: 0.000001
   force: 300
   exponent: 200
-  initial: {fileID: 2800000, guid: ded36cca018f2e741aa6a4c55495a7f0, type: 3}
-  computeShader: {fileID: 7200000, guid: d22e22a0ad6cd4182a2c8be1feddb64e, type: 3}
-  renderShader: {fileID: 4800000, guid: 0486f5f9fa757fa49a5b9613050036fb, type: 3}
+  sourceImage: {fileID: 2800000, guid: 1bd52a3c96dbf4b309b0bde5a175a088, type: 3}
+  shader: {fileID: 7200000, guid: d22e22a0ad6cd4182a2c8be1feddb64e, type: 3}
+  material: {fileID: 2100000, guid: 2caa6d0871e0342028875f9960f124c6, type: 2}
 --- !u!20 &1163476468
 Camera:
   m_ObjectHideFlags: 0
