@@ -28,155 +28,64 @@ float2 forceVector;
 float forceExponent;
 int swapId;
 
-int GetCellIndex(uint2 id){
-    return id.x + id.y * resolution;
+uint2 GetCellLocation(uint id){
+    uint y = id/resolution;
+    return uint2(id - y*resolution, y);
 }
 
-int GetCellIndex(int x, int y){
-    return x + y * resolution;
-}
-
-uint2 GetCellLocation(uint index){
-    uint y = index/(uint)resolution;
-    uint x = index - y * (uint)resolution;
-    return uint2(x, y);
-}
-
-[numthreads(8,1,1)]
-void Advect (uint3 id : SV_DispatchThreadID)
+[numthreads(8, 1, 1)]
+void SetBoundary(uint id : SV_DispatchThreadID)
 {
-    if (id.x<0 || id.x>=(uint)fluidMax) return;
-    
-    uint2 dim = uint2(resolution, resolution);
-    uint2 tid = GetCellLocation(id.x);
-    
-    float2 uv = (tid + 0.5) / dim;
-    float2 duv = fluid[id.x].velocity * float2((float)dim.y / dim.x, 1) * deltaTime;
-    uint2 sid = (uint2)((uv-duv) * dim);
-    int sIndex = GetCellIndex(sid);
-    if (sIndex<0 || sIndex>=fluidMax) return;
+    uint2 loc = GetCellLocation(id.x);
 
-    fluid[id.x].v0 = fluid[sIndex].velocity;
+    if (loc.x==0){
+        if (loc.y==0){
+            //Bottom left corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(1,0)] + fluid[GetCellIndex(0, 1)]);
+        }else if (loc.y==resolution-1){
+            //Top left corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(1,resolution-1)] + fluid[GetCellIndex(0, resolution-2)]);
+        }else{
+            //Left edge
+            fluid[id.x] = fluid[GetCellIndex(1,loc.y)];
+        }   
+    }else if (loc.x==resolution-1){
+        if (loc.y==0){
+            //Bottom right corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(resolution-2,0)] + fluid[GetCellIndex(resolution-1, 1)]);
+        }else if (loc.y==resolution-1){
+            //Top right corner
+            fluid[id.x] = 0.5f * (fluid[GetCellIndex(1,resolution-1)] + fluid[GetCellIndex(0, resolution-2)]);
+        }else{
+            //Right edge   
+            fluid[id.x] = fluid[GetCellIndex(resolution-2,loc.y)];
+        }
+    }else if (loc.y==0){
+        //Bottom edge
+        fluid[id.x] = fluid[GetCellIndex(loc.x, 1)];
+    }else if (loc.y==resolution-1){
+        //Top edge
+        fluid[id.x] = fluid[GetCellIndex(loc.x, resolution-2)];
 }
 
-[numthreads(8,1,1)]
-void Swap (uint3 id : SV_DispatchThreadID)
+[numthreads(8, 1, 1)]
+void LinSolve2(uint id : SV_DispatchThreadID)
 {
-    if (id.x<0 || id.x>=(uint)fluidMax) return;
+    if (id.x < fluidMax) return;
 
-    FluidCell cell = fluid[id.x];
-    float d;
-    float2 v;
-
-    if (swapId==0){
-        //Just a copy
-        cell.velocity = cell.v0;
-    }else if (swapId==1){
-        d = cell.d;
-        cell.d = cell.density;
-        cell.density = d;
-    }else if (swapId==2){
-        v = cell.v0;
-        cell.v0 = cell.velocity;
-        cell.velocity = v;
-    }else if (swapId==3){
-        v = cell.v1;
-        cell.v1 = cell.velocity;
-        cell.velocity = v;
-    }else if (swapId==4){
-        v = cell.velocity;
-        cell.velocity = cell.v0;
-        cell.v0 = v;
-    }else if (swapId==5){
-        v = cell.velocity;
-        cell.velocity = cell.v1;
-        cell.v1 = v;
-    }else if (swapId==6){
-        v = cell.v0;
-        cell.v0 = cell.v1;
-        cell.v1 = v;
+    fluid[id.x].velocity =
+        (x0[IX(i, j, m)]
+            + a*(    x[IX(i+1, j  , m  )]
+                    +x[IX(i-1, j  , m  )]
+                    +x[IX(i  , j+1, m  )]
+                    +x[IX(i  , j-1, m  )]
+                    +x[IX(i  , j  , m+1)]
+                    +x[IX(i  , j  , m-1)]
+            )) * cRecip;
+                }
+            }
+        }
+        set_bnd(b, x, N);
     }
-
-    fluid[id.x] = cell;
-}
-
-[numthreads(8,1,1)]
-void Force (uint3 id : SV_DispatchThreadID)
-{
-    if (id.x<0 || id.x>=(uint)fluidMax) return;
-    
-    uint2 dim = uint2(resolution, resolution);
-    uint2 tid = GetCellLocation(id.x);
-    
-    float2 pos = (tid + 0.5 - dim * 0.5) / dim.y;
-    float amp = exp(-forceExponent * distance(forceOrigin, pos));
-
-    fluid[id.x].v0 = fluid[id.x].v1 + forceVector * amp;
-}
-
-[numthreads(8,1,1)]
-void ProjectInit (uint3 id : SV_DispatchThreadID)
-{
-    if (id.x<0 || id.x>=(uint)fluidMax) return;
-
-    FluidCell cell = fluid[id.x];
-
-    cell.v1 = (fluid[id.x + 1].v0.x - fluid[id.x - 1].v0.x +
-                     fluid[id.x + resolution].v0.y - fluid[id.x - resolution].v0.y) * resolution / 2;
-
-    cell.density = 0;
-
-    fluid[id.x] = cell;
-}
-
-[numthreads(8,1,1)]
-void Project (uint3 id : SV_DispatchThreadID)
-{
-    if (id.x<0 || id.x>=(uint)fluidMax) return;
-    
-    uint2 dim = uint2(resolution, resolution);
-    uint2 tid = GetCellLocation(id.x);
-
-    if (any(tid == 0) || any(tid == dim - 1)) return;
-
-    float P1 = fluid[GetCellIndex(max(tid - int2(1, 0), 1))].density;
-    float P2 = fluid[GetCellIndex(min(tid + int2(1, 0), dim - 2))].density;
-    float P3 = fluid[GetCellIndex(max(tid - int2(0, 1), 1))].density;
-    float P4 = fluid[GetCellIndex(min(tid + int2(0, 1), dim - 2))].density;
-
-    float2 u = fluid[id.x].v1 - float2(P2 - P1, P4 - P3) * dim.y / 2;
-
-    fluid[id.x].velocity = u;
-
-    if (tid.x == 1) fluid[GetCellIndex(int2(0, tid.y))].velocity = -u;
-    if (tid.y == 1) fluid[GetCellIndex(int2(tid.x, 0))].velocity = -u;
-    if (tid.x == dim.x - 2) fluid[GetCellIndex(int2(dim.x - 1, tid.y))].velocity = -u;
-    if (tid.y == dim.y - 2) fluid[GetCellIndex(int2(tid.x, dim.y - 1))].velocity = -u;
-}
-
-[numthreads(8, 1, 1)]
-void Jacobi1(uint2 id : SV_DispatchThreadID)
-{
-    if (id.x>=(uint)fluidMax) return;
-
-    FluidCell cell = fluid[id.x];
-    
-    cell.density = ( fluid[id.x-1].d + fluid[id.x+1].d + fluid[id.x-resolution].d + fluid[id.x+resolution].d +
-                         alpha * cell.v1.x ) / beta;
-
-    fluid[id.x] = cell;        
-}
-
-[numthreads(8, 1, 1)]
-void Jacobi2(uint2 id : SV_DispatchThreadID)
-{
-    if (id.x>=(uint)fluidMax) return;
-
-    FluidCell cell = fluid[id.x];
-    
-    cell.velocity = ( fluid[id.x-1].v0 + fluid[id.x+1].v0 + fluid[id.x-resolution].v0 + fluid[id.x+resolution].v0 +
-                         alpha * cell.v1 ) / beta;
-
-    fluid[id.x] = cell;        
 }
 

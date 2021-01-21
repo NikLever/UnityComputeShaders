@@ -162,7 +162,7 @@ public class SPHGrid : MonoBehaviour
                             (int)gridBounds.localScale.z,
                             0);
 
-        float cellSize = smoothingRadius * 2;
+        float cellSize = smoothingRadius;
         gridDimensions /= cellSize;
         gridDimensions.w = gridDimensions.x * gridDimensions.y * gridDimensions.z;
 
@@ -180,8 +180,7 @@ public class SPHGrid : MonoBehaviour
 
         Debug.Log("gridDimensions:" + gridDimensions);
         Debug.Log("gridStartPosition:" + gridStartPosition);
-        //Debug.Log("Grid Buffer size minus gridDimensions.w = " + (gridCount - gridDimensions.w));
-
+        
         gridBuffer = new ComputeBuffer(gridCount, SIZE_GRID_CELL);
     }
 
@@ -242,6 +241,9 @@ public class SPHGrid : MonoBehaviour
         shader.SetBuffer(kernelComputeColliders, "particles", particlesBuffer);
         shader.SetBuffer(kernelComputeColliders, "colliders", collidersBuffer);
 
+        //material.SetBuffer("_Grid", gridBuffer);
+        //material.SetVector("_GridDimensions", gridDimensions);
+        //material.SetVector("_GridStartPosition", gridStartPosition);
         material.SetBuffer("particles", particlesBuffer);
         material.SetFloat("_Radius", particleRadius);
     }

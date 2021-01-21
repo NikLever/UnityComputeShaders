@@ -156,7 +156,8 @@ void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
 
     particle.density = 0.0f;
 
-    if (useGrid==0){
+    //if (useGrid==0){
+
         for (int j = 0; j < particleCount; j++)
         {
             float3 relativePosition = particles[j].position - particle.position;
@@ -167,7 +168,8 @@ void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
                 particle.density += mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq - rP2, 3.0f);
             }
         }
-    }else{
+
+    /*}else{
         int3 loc = GetParticleGridLocation(id.x);
         for(int x=loc.x-1; x<=loc.x+1; x++){
             for(int y=loc.y-1; y<=loc.y+1; y++){
@@ -194,7 +196,7 @@ void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
         //if (particle.density == 0){
         //    particle.density = mass * (315.0f / (64.0f * PI * pow(smoothingRadius, 9.0f))) * pow(smoothingRadiusSq, 3.0f);
         //}
-    }
+    }*/
 
 
     particle.pressure = gas * (particle.density - restDensity);
@@ -228,7 +230,8 @@ void ComputeForces (uint3 id : SV_DispatchThreadID)
     SPHParticle particle = particles[id.x];
     float3 force = 0;
 
-    if (useGrid==0){
+    //if (useGrid==0){
+
         for (int j = 0; j < particleCount; j++)
         {
             if (id.x == (uint)j) continue;
@@ -247,7 +250,7 @@ void ComputeForces (uint3 id : SV_DispatchThreadID)
                 force += particleViscosity * mass * (particleJ.velocity - particle.velocity) / particleJ.density * (45.0f / (PI * pow(smoothingRadius, 6.0f))) * (smoothingRadius - r);
             }
         }
-    }else{
+    /*}else{
         int3 loc = GetParticleGridLocation(id.x);
 
         for(int x=loc.x-1; x<=loc.x+1; x++){
@@ -270,7 +273,7 @@ void ComputeForces (uint3 id : SV_DispatchThreadID)
                 
             }
         }
-    }
+    }*/
 
     float3 forceGravity = gravity.xyz * particle.density * gravity.w;
 

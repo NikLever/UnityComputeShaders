@@ -147,7 +147,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9556913}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -158,7 +158,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 1bc22b3df8d504d43aa7313f15ef131d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -701,7 +701,6 @@ GameObject:
   - component: {fileID: 1286900659}
   - component: {fileID: 1286900658}
   - component: {fileID: 1286900657}
-  - component: {fileID: 1286900660}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -768,72 +767,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286900656}
   m_LocalRotation: {x: 0.34857202, y: 0, z: 0, w: 0.937282}
-  m_LocalPosition: {x: 0, y: 59.1, z: -40.7}
+  m_LocalPosition: {x: 0, y: 59.1, z: -53.03}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 40.8, y: 0, z: 0}
---- !u!114 &1286900660
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1286900656}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 948f4100a11a5c24981795d21301da5c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  volumeTrigger: {fileID: 1286900659}
-  volumeLayer:
-    serializedVersion: 2
-    m_Bits: 256
-  stopNaNPropagation: 1
-  finalBlitToCameraTarget: 1
-  antialiasingMode: 3
-  temporalAntialiasing:
-    jitterSpread: 0.75
-    sharpness: 0.25
-    stationaryBlending: 0.95
-    motionBlending: 0.85
-  subpixelMorphologicalAntialiasing:
-    quality: 2
-  fastApproximateAntialiasing:
-    fastMode: 0
-    keepAlpha: 0
-  fog:
-    enabled: 1
-    excludeSkybox: 1
-  debugLayer:
-    lightMeter:
-      width: 512
-      height: 256
-      showCurves: 1
-    histogram:
-      width: 512
-      height: 256
-      channel: 3
-    waveform:
-      exposure: 0.12
-      height: 256
-    vectorscope:
-      size: 256
-      exposure: 0.12
-    overlaySettings:
-      linearDepth: 0
-      motionColorIntensity: 4
-      motionGridSize: 64
-      colorBlindnessType: 0
-      colorBlindnessStrength: 1
-  m_Resources: {fileID: 11400000, guid: d82512f9c8e5d4a4d938b575d47f88d4, type: 2}
-  m_ShowToolkit: 0
-  m_ShowCustomSorter: 0
-  breakBeforeColorGrading: 0
-  m_BeforeTransparentBundles: []
-  m_BeforeStackBundles: []
-  m_AfterStackBundles: []
 --- !u!1 &1514274465
 GameObject:
   m_ObjectHideFlags: 0
@@ -870,13 +809,13 @@ MonoBehaviour:
   particleViscosity: 1
   particleDrag: 0.025
   particleMesh: {fileID: 4300000, guid: 823956ce1b683574ca519f1f470eb81d, type: 3}
-  particleCount: 5000
-  rowSize: 20
+  particleCount: 8000
+  rowSize: 30
   shader: {fileID: 7200000, guid: 4e9c5c033b41646efb0160a942fa5644, type: 3}
-  material: {fileID: 2100000, guid: b8fa295f9b3d6434aabe14c34a207892, type: 2}
+  material: {fileID: 2100000, guid: 1bc22b3df8d504d43aa7313f15ef131d, type: 2}
   gridBounds: {fileID: 9556917}
-  useGrid: 0
-  debug: 1
+  useGrid: 1
+  debug: 0
 --- !u!4 &1514274467
 Transform:
   m_ObjectHideFlags: 0
