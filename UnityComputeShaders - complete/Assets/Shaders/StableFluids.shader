@@ -13,15 +13,6 @@ Shader "Custom/StableFluids"
 
     #include "UnityCG.cginc"
 
-    struct FluidCell
-    {
-        float density;
-        float d;
-        float2 velocity;
-        float2 v;
-    };
-
-    StructuredBuffer<FluidCell> _FluidBuffer;
     sampler2D _MainTex;
     float4 _MainTex_TexelSize;
 
@@ -29,7 +20,6 @@ Shader "Custom/StableFluids"
 
     float2 _ForceOrigin;
     float _ForceExponent;
-    int _Resolution;
 
     half4 frag_advect(v2f_img i) : SV_Target
     {
@@ -41,13 +31,11 @@ Shader "Custom/StableFluids"
         float2 aspect = float2(_MainTex_TexelSize.y * _MainTex_TexelSize.z, 1);
         float2 aspect_inv = float2(_MainTex_TexelSize.x * _MainTex_TexelSize.w, 1);
 
-        // Color advection with the velocity field  
-        float2 uv = i.uv *_Resolution;
-        uint id = (int)(uv.x + uv.y * _Resolution);
-        float2 delta = _FluidBuffer[id].velocity * aspect_inv * deltaTime;
+        // Color advection with the velocity field
+        float2 delta = tex2D(_VelocityField, i.uv).xy * aspect_inv * deltaTime;
         float3 color = tex2D(_MainTex, i.uv - delta).xyz;
 
-        // Dye (injection color) 
+        // Dye (injection color)
         float3 dye = saturate(sin(time * float3(2.72, 5.12, 4.98)) + 0.5);
 
         // Blend dye with the color from the buffer.

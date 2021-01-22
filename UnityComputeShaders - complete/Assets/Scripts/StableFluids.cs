@@ -1,189 +1,210 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿// StableFluids - A GPU implementation of Jos Stam's Stable Fluids on Unity
+// adapted from https://github.com/keijiro/StableFluids
+
 using UnityEngine;
+
 
 public class StableFluids : MonoBehaviour
 {
-    struct FluidCell
-    {
-        public float density;
-        public float d;
-        public Vector2 velocity;
-        public Vector2 v;
-    };
-    const int SIZE_FLUID_CELL = 6 * sizeof(float);
-
     public int resolution = 512;
     public float viscosity = 1e-6f;
     public float force = 300;
     public float exponent = 200;
-
-    public Texture2D sourceImage;
-    public ComputeShader shader;
-    
+    public Texture2D initial;
+    public ComputeShader compute;
     public Material material;
 
+   
     Vector2 previousInput;
-    ComputeBuffer fluidBuffer;
-
-    int groupSize;
 
     int kernelAdvect;
-    int kernelSwap;
+    int kernelForce;
+    int kernelPSetup;
+    int kernelPFinish;
     int kernelJacobi1;
     int kernelJacobi2;
-    int kernelForce;
-    int kernelProjectInit;
-    int kernelProject;
-    
-    RenderTexture fluidRT1;
-    RenderTexture fluidRT2;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        InitRenderTextures();
-        InitBuffer();
-        InitShader();
-    }
+    int threadCountX { get { return (resolution + 7) / 8; } }
+    int threadCountY { get { return (resolution * Screen.height / Screen.width + 7) / 8; } }
 
-    RenderTexture CreateRenderTexture(int width, int height)
+    int resolutionX { get { return threadCountX * 8; } }
+    int resolutionY { get { return threadCountY * 8; } }
+
+    // Vector field buffers
+    RenderTexture vfbRTV1;
+    RenderTexture vfbRTV2;
+    RenderTexture vfbRTV3;
+    RenderTexture vfbRTP1;
+    RenderTexture vfbRTP2;
+
+    // Color buffers (for double buffering)
+    RenderTexture colorRT1;
+    RenderTexture colorRT2;
+
+    RenderTexture CreateRenderTexture(int componentCount, int width = 0, int height = 0)
     {
         var format = RenderTextureFormat.ARGBHalf;
-        
+        if (componentCount == 1) format = RenderTextureFormat.RHalf;
+        if (componentCount == 2) format = RenderTextureFormat.RGHalf;
+
+        if (width == 0) width = resolutionX;
+        if (height == 0) height = resolutionY;
+
         var rt = new RenderTexture(width, height, 0, format);
         rt.enableRandomWrite = true;
         rt.Create();
-
         return rt;
     }
 
-    void InitRenderTextures()
+    
+    void OnValidate()
     {
-        fluidRT1 = CreateRenderTexture(Screen.width, Screen.height);
-        fluidRT2 = CreateRenderTexture(Screen.width, Screen.height);
-        Graphics.Blit( sourceImage, fluidRT1);
+        resolution = Mathf.Max(resolution, 8);
     }
 
-    void InitBuffer()
+    void Start()
     {
-        int size = resolution * resolution;
+        InitBuffers();
+        InitShader();
 
-        fluidBuffer = new ComputeBuffer(size, SIZE_FLUID_CELL);
+        Graphics.Blit(initial, colorRT1);
+    }
 
-        groupSize = Mathf.CeilToInt((float)size / 8.0f );
+    void InitBuffers()
+    {
+        vfbRTV1 = CreateRenderTexture(2);
+        vfbRTV2 = CreateRenderTexture(2);
+        vfbRTV3 = CreateRenderTexture(2);
+        vfbRTP1 = CreateRenderTexture(1);
+        vfbRTP2 = CreateRenderTexture(1);
+
+        colorRT1 = CreateRenderTexture(4, Screen.width, Screen.height);
+        colorRT2 = CreateRenderTexture(4, Screen.width, Screen.height);
     }
 
     void InitShader()
     {
-        kernelAdvect = shader.FindKernel("Advect");
-        kernelSwap = shader.FindKernel("Swap");
-        kernelJacobi1 = shader.FindKernel("Jacobi1");
-        kernelJacobi2 = shader.FindKernel("Jacobi2");
-        kernelForce = shader.FindKernel("Force");
-        kernelProjectInit = shader.FindKernel("ProjectInit");
-        kernelProject = shader.FindKernel("Project");
-
-        shader.SetBuffer(kernelAdvect, "fluid", fluidBuffer);
-        shader.SetBuffer(kernelSwap, "fluid", fluidBuffer);
-        shader.SetBuffer(kernelJacobi1, "fluid", fluidBuffer);
-        shader.SetBuffer(kernelJacobi2, "fluid", fluidBuffer);
-        shader.SetBuffer(kernelForce, "fluid", fluidBuffer);
-        shader.SetBuffer(kernelProjectInit, "fluid", fluidBuffer);
-        shader.SetBuffer(kernelProject, "fluid", fluidBuffer);
-
-        shader.SetInt("resolution", resolution);
-        shader.SetInt("fluidMax", resolution * resolution);
-        shader.SetFloat("forceExponent", exponent);
-
-        material.SetBuffer("_FluidBuffer", fluidBuffer);
-        material.SetFloat("_ForceExponent", exponent);
-        material.SetInt("_Resolution", resolution);
+        kernelAdvect = compute.FindKernel("Advect");
+        kernelForce = compute.FindKernel("Force");
+        kernelPSetup = compute.FindKernel("PSetup");
+        kernelPFinish = compute.FindKernel("PFinish");
+        kernelJacobi1 = compute.FindKernel("Jacobi1");
+        kernelJacobi2 = compute.FindKernel("Jacobi2");
     }
 
-    // Update is called once per frame
+    void OnDestroy()
+    {
+        Destroy(vfbRTV1);
+        Destroy(vfbRTV2);
+        Destroy(vfbRTV3);
+        Destroy(vfbRTP1);
+        Destroy(vfbRTP2);
+
+        Destroy(colorRT1);
+        Destroy(colorRT2);
+    }
+
     void Update()
     {
-        float dx = 1.0f / resolution;
+        var dt = Time.deltaTime;
+        var dx = 1.0f / resolutionY;
 
         // Input point
-        Vector2 input = new Vector2(
+        var input = new Vector2(
             (Input.mousePosition.x - Screen.width * 0.5f) / Screen.height,
             (Input.mousePosition.y - Screen.height * 0.5f) / Screen.height
         );
 
-        shader.SetFloat("time", Time.time);
-        shader.SetFloat("deltaTime", Time.deltaTime);
+        // Common variables
+        compute.SetFloat("Time", Time.time);
+        compute.SetFloat("DeltaTime", dt);
 
-        shader.Dispatch(kernelAdvect, groupSize, 1, 1);
-        shader.SetInt("swapId", 0);
-        shader.Dispatch(kernelSwap, groupSize, 1, 1);
+        // Advection
+        compute.SetTexture(kernelAdvect, "U_in", vfbRTV1);
+        compute.SetTexture(kernelAdvect, "W_out", vfbRTV2);
+        compute.Dispatch(kernelAdvect, threadCountX, threadCountY, 1);
 
-        float diffAlpha = dx * dx / (viscosity * Time.deltaTime);
-        shader.SetFloat("alpha", diffAlpha);
-        shader.SetFloat("beta", 4 + diffAlpha);
-
-        shader.SetInt("swapId", 6);
+        // Diffuse setup
+        var difalpha = dx * dx / (viscosity * dt);
+        compute.SetFloat("Alpha", difalpha);
+        compute.SetFloat("Beta", 4 + difalpha);
+        Graphics.CopyTexture(vfbRTV2, vfbRTV1);
+        compute.SetTexture(kernelJacobi2, "B2_in", vfbRTV1);
 
         // Jacobi iteration
         for (var i = 0; i < 20; i++)
         {
-            shader.Dispatch(kernelJacobi2, groupSize, 1, 1);
-            shader.Dispatch(kernelSwap, groupSize, 1, 1);
+            compute.SetTexture(kernelJacobi2, "X2_in", vfbRTV2);
+            compute.SetTexture(kernelJacobi2, "X2_out", vfbRTV3);
+            compute.Dispatch(kernelJacobi2, threadCountX, threadCountY, 1);
+
+            compute.SetTexture(kernelJacobi2, "X2_in", vfbRTV3);
+            compute.SetTexture(kernelJacobi2, "X2_out", vfbRTV2);
+            compute.Dispatch(kernelJacobi2, threadCountX, threadCountY, 1);
         }
 
         // Add external force
-        shader.SetVector("forceOrigin", input);
-        
+        compute.SetVector("ForceOrigin", input);
+        compute.SetFloat("ForceExponent", exponent);
+        compute.SetTexture(kernelForce, "W_in", vfbRTV2);
+        compute.SetTexture(kernelForce, "W_out", vfbRTV3);
+
         if (Input.GetMouseButton(1))
             // Random push
-            shader.SetVector("forceVector", Random.insideUnitCircle * force * 0.025f);
+            compute.SetVector("ForceVector", Random.insideUnitCircle * force * 0.025f);
         else if (Input.GetMouseButton(0))
             // Mouse drag
-            shader.SetVector("forceVector", (input - previousInput) * force);
+            compute.SetVector("ForceVector", (input - previousInput) * force);
         else
-            shader.SetVector("forceVector", Vector4.zero);
+            compute.SetVector("ForceVector", Vector4.zero);
 
-        shader.Dispatch(kernelForce, groupSize, 1, 1);
+        compute.Dispatch(kernelForce, threadCountX, threadCountY, 1);
 
         // Projection setup
-        shader.Dispatch(kernelProjectInit, groupSize, 1, 1);
+        compute.SetTexture(kernelPSetup, "W_in", vfbRTV3);
+        compute.SetTexture(kernelPSetup, "DivW_out", vfbRTV2);
+        compute.SetTexture(kernelPSetup, "P_out", vfbRTP1);
+        compute.Dispatch(kernelPSetup, threadCountX, threadCountY, 1);
 
         // Jacobi iteration
-        shader.SetFloat("alpha", -dx * dx);
-        shader.SetFloat("beta", 4);
-        shader.SetInt("swapId", 1);
-        
+        compute.SetFloat("Alpha", -dx * dx);
+        compute.SetFloat("Beta", 4);
+        compute.SetTexture(kernelJacobi1, "B1_in", vfbRTV2);
+
         for (var i = 0; i < 20; i++)
         {
-            shader.Dispatch(kernelJacobi1, groupSize, 1, 1);
-            shader.Dispatch(kernelSwap, groupSize, 1, 1);
+            compute.SetTexture(kernelJacobi1, "X1_in", vfbRTP1);
+            compute.SetTexture(kernelJacobi1, "X1_out", vfbRTP2);
+            compute.Dispatch(kernelJacobi1, threadCountX, threadCountY, 1);
+
+            compute.SetTexture(kernelJacobi1, "X1_in", vfbRTP2);
+            compute.SetTexture(kernelJacobi1, "X1_out", vfbRTP1);
+            compute.Dispatch(kernelJacobi1, threadCountX, threadCountY, 1);
         }
 
         // Projection finish
-        shader.Dispatch(kernelProject, groupSize, 1, 1);
+        compute.SetTexture(kernelPFinish, "W_in", vfbRTV3);
+        compute.SetTexture(kernelPFinish, "P_in", vfbRTP1);
+        compute.SetTexture(kernelPFinish, "U_out", vfbRTV1);
+        compute.Dispatch(kernelPFinish, threadCountX, threadCountY, 1);
 
+        // Apply the velocity field to the color buffer.
         var offs = Vector2.one * (Input.GetMouseButton(1) ? 0 : 1e+7f);
         material.SetVector("_ForceOrigin", input + offs);
-        Graphics.Blit(fluidRT1, fluidRT2, material, 0);
+        material.SetFloat("_ForceExponent", exponent);
+        material.SetTexture("_VelocityField", vfbRTV1);
+        Graphics.Blit(colorRT1, colorRT2, material, 0);
 
         // Swap the color buffers.
-        var temp = fluidRT1;
-        fluidRT1 = fluidRT2;
-        fluidRT2 = temp;
+        var temp = colorRT1;
+        colorRT1 = colorRT2;
+        colorRT2 = temp;
 
         previousInput = input;
     }
 
-    private void OnDestroy()
-    {
-        fluidBuffer.Dispose();
-        Destroy(fluidRT1);
-        Destroy(fluidRT2);
-    }
-
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        Graphics.Blit( fluidRT1, destination, material, 1);
+        Graphics.Blit(colorRT1, destination, material, 1);
     }
 }
