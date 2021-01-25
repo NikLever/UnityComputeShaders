@@ -1,0 +1,97 @@
+﻿#pragma kernel ComputeDensityPressure
+#pragma kernel ComputeForces
+#pragma kernel Integrate
+#pragma kernel ComputeColliders
+
+struct SPHParticle
+{
+    float3 position;
+    float3 velocity;
+    float3 force;
+    float density;
+    float pressure;
+};
+
+struct SPHCollider
+{
+    float3 position;
+    float3 right;
+    float3 up;
+    float2 scale;
+};
+
+shared RWStructuredBuffer<SPHParticle> particles;
+shared StructuredBuffer<SPHCollider> colliders;
+
+//Passed from SPHFluid.cs
+int particleCount;
+int colliderCount;
+float smoothingRadius;
+float smoothingRadiusSq;
+float gas;
+float restDensity;
+float mass;
+float radius;
+float particleDrag;
+float particleViscosity;
+float damping;
+float deltaTime;
+float4 gravity;
+
+float3 penetrationNormal;
+float penetrationLength;
+float3 penetrationPosition;
+
+#define PI 3.1415926536
+#define PARTICLETHREADCOUNT 128
+
+bool Intersect(SPHCollider collider, float3 position){
+    float3 colliderProjection = collider.position - position;
+
+    penetrationNormal = cross(collider.right, collider.up);
+    penetrationLength = abs(dot(colliderProjection, penetrationNormal)) - (radius / 2.0);
+    penetrationPosition = collider.position - colliderProjection;
+
+    return penetrationLength < 0.0
+        && abs(dot(colliderProjection, collider.right)) < collider.scale.x
+        && abs(dot(colliderProjection, collider.up)) < collider.scale.y;
+}
+
+float3 DampVelocity(SPHCollider collider, float3 velocity, float drag)
+{
+    float3 newVelocity = dot(velocity, penetrationNormal) * penetrationNormal * damping
+                    + dot(velocity, collider.right) * collider.right * drag
+                    + dot(velocity, collider.up) * collider.up * drag;
+
+    float3 forward = float3(0,0,1);
+    float3 right = float3(1,0,0);
+    float3 up = float3(0,1,0);
+
+    return dot(newVelocity, forward) * forward
+            + dot(newVelocity, right) * right
+            + dot(newVelocity, up) * up;
+}
+
+[numthreads(PARTICLETHREADCOUNT,1,1)]
+void ComputeDensityPressure (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(PARTICLETHREADCOUNT,1,1)]
+void ComputeForces (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(PARTICLETHREADCOUNT,1,1)]
+void Integrate (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(PARTICLETHREADCOUNT,1,1)]
+void ComputeColliders (uint3 id : SV_DispatchThreadID)
+{
+    
+}

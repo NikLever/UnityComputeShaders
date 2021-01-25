@@ -3,10 +3,10 @@
 
 #pragma kernel Advect
 #pragma kernel Force
-#pragma kernel PSetup
-#pragma kernel PFinish
-#pragma kernel Jacobi1
-#pragma kernel Jacobi2
+#pragma kernel ProjectSetup
+#pragma kernel ProjectFinish
+#pragma kernel Diffuse1
+#pragma kernel Diffuse2
 
 // Common parameter
 float Time;
@@ -25,7 +25,7 @@ RWTexture2D<float2> U_out;
 Texture2D<float2> W_in;
 RWTexture2D<float2> W_out;
 
-// Div W
+// Div W  
 RWTexture2D<float> DivW_out;
 
 // P (pressure field)
@@ -72,7 +72,7 @@ void Force(uint2 tid : SV_DispatchThreadID)
 
 // Setup for Project step (divW calculation)
 [numthreads(8, 8, 1)]
-void PSetup(uint2 tid : SV_DispatchThreadID)
+void ProjectSetup(uint2 tid : SV_DispatchThreadID)
 {
     uint2 dim;
     W_in.GetDimensions(dim.x, dim.y);
@@ -85,7 +85,7 @@ void PSetup(uint2 tid : SV_DispatchThreadID)
 
 // Finishing for Project step (divergence free field calculation)
 [numthreads(8, 8, 1)]
-void PFinish(uint2 tid : SV_DispatchThreadID)
+void ProjectFinish(uint2 tid : SV_DispatchThreadID)
 {
     uint2 dim;
     W_in.GetDimensions(dim.x, dim.y);
@@ -109,7 +109,7 @@ void PFinish(uint2 tid : SV_DispatchThreadID)
 
 // Jacobi method with a scalar field
 [numthreads(8, 8, 1)]
-void Jacobi1(uint2 tid : SV_DispatchThreadID)
+void Diffuse1(uint2 tid : SV_DispatchThreadID)
 {
     X1_out[tid] = (X1_in[tid - int2(1, 0)] + X1_in[tid + int2(1, 0)] +
                    X1_in[tid - int2(0, 1)] + X1_in[tid + int2(0, 1)] + Alpha * B1_in[tid]) / Beta;
@@ -117,7 +117,7 @@ void Jacobi1(uint2 tid : SV_DispatchThreadID)
 
 // Jacobi method with a vector field
 [numthreads(8, 8, 1)]
-void Jacobi2(uint2 tid : SV_DispatchThreadID)
+void Diffuse2(uint2 tid : SV_DispatchThreadID)
 {
     X2_out[tid] = (X2_in[tid - int2(1, 0)] + X2_in[tid + int2(1, 0)] +
                    X2_in[tid - int2(0, 1)] + X2_in[tid + int2(0, 1)] + Alpha * B2_in[tid]) / Beta;

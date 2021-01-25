@@ -131,7 +131,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1163476469}
   - component: {fileID: 1163476468}
-  - component: {fileID: 1163476466}
+  - component: {fileID: 1163476467}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -139,7 +139,7 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1163476466
+--- !u!114 &1163476467
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -148,16 +148,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1163476465}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 68b35f6f5dea6274db0eda640e08abc2, type: 3}
+  m_Script: {fileID: 11500000, guid: 13a26428e5aea486abfe9a3da448f4eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _resolution: 512
-  _viscosity: 0.01
-  _force: 300
-  _exponent: 200
-  _initial: {fileID: 2800000, guid: 1bd52a3c96dbf4b309b0bde5a175a088, type: 3}
-  _compute: {fileID: 7200000, guid: cd1f70f1f6b4beb45a02e1c088f0a109, type: 3}
-  _shader: {fileID: 4800000, guid: 0486f5f9fa757fa49a5b9613050036fb, type: 3}
+  resolution: 512
+  viscosity: 0.000001
+  force: 300
+  exponent: 200
+  initial: {fileID: 2800000, guid: 1bd52a3c96dbf4b309b0bde5a175a088, type: 3}
+  compute: {fileID: 7200000, guid: d22e22a0ad6cd4182a2c8be1feddb64e, type: 3}
+  material: {fileID: 2100000, guid: 2caa6d0871e0342028875f9960f124c6, type: 2}
 --- !u!20 &1163476468
 Camera:
   m_ObjectHideFlags: 0

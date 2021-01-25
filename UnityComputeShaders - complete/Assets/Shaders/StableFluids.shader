@@ -38,7 +38,7 @@ Shader "Custom/StableFluids"
         // Dye (injection color)
         float3 dye = saturate(sin(time * float3(2.72, 5.12, 4.98)) + 0.5);
 
-        // Blend dye with the color from the buffer.
+        // Blend dye with the color from the buffer.  
         float2 pos = (i.uv - 0.5) * aspect;
         float amp = exp(-_ForceExponent * distance(_ForceOrigin, pos));
         color = lerp(color, dye, saturate(amp * 100));
@@ -48,7 +48,8 @@ Shader "Custom/StableFluids"
 
     half4 frag_render(v2f_img i) : SV_Target
     {
-        half3 rgb = tex2D(_MainTex, i.uv).rgb;
+        //half3 rgb = tex2D(_MainTex, i.uv).rgb;
+        half3 rgb = tex2D(_VelocityField, i.uv).xyx;
 
         return half4(rgb, 1);
     }

@@ -19,10 +19,10 @@ public class StableFluids : MonoBehaviour
 
     int kernelAdvect;
     int kernelForce;
-    int kernelPSetup;
-    int kernelPFinish;
-    int kernelJacobi1;
-    int kernelJacobi2;
+    int kernelProjectSetup;
+    int kernelProjectFinish;
+    int kernelDiffuse1;
+    int kernelDiffuse2;
 
     int threadCountX { get { return (resolution + 7) / 8; } }
     int threadCountY { get { return (resolution * Screen.height / Screen.width + 7) / 8; } }
@@ -86,10 +86,33 @@ public class StableFluids : MonoBehaviour
     {
         kernelAdvect = compute.FindKernel("Advect");
         kernelForce = compute.FindKernel("Force");
-        kernelPSetup = compute.FindKernel("PSetup");
-        kernelPFinish = compute.FindKernel("PFinish");
-        kernelJacobi1 = compute.FindKernel("Jacobi1");
-        kernelJacobi2 = compute.FindKernel("Jacobi2");
+        kernelProjectSetup = compute.FindKernel("ProjectSetup");
+        kernelProjectFinish = compute.FindKernel("ProjectFinish");
+        kernelDiffuse1 = compute.FindKernel("Diffuse1");
+        kernelDiffuse2 = compute.FindKernel("Diffuse2");
+
+        compute.SetTexture(kernelAdvect, "U_in", vfbRTV1);
+        compute.SetTexture(kernelAdvect, "W_out", vfbRTV2);
+
+        compute.SetTexture(kernelDiffuse2, "B2_in", vfbRTV1);
+
+        compute.SetTexture(kernelForce, "W_in", vfbRTV2);
+        compute.SetTexture(kernelForce, "W_out", vfbRTV3);
+
+        compute.SetTexture(kernelProjectSetup, "W_in", vfbRTV3);
+        compute.SetTexture(kernelProjectSetup, "DivW_out", vfbRTV2);
+        compute.SetTexture(kernelProjectSetup, "P_out", vfbRTP1);
+
+        compute.SetTexture(kernelDiffuse1, "B1_in", vfbRTV2);
+
+        compute.SetTexture(kernelProjectFinish, "W_in", vfbRTV3);
+        compute.SetTexture(kernelProjectFinish, "P_in", vfbRTP1);
+        compute.SetTexture(kernelProjectFinish, "U_out", vfbRTV1);
+        
+        compute.SetFloat("ForceExponent", exponent);
+
+        material.SetFloat("_ForceExponent", exponent);
+        material.SetTexture("_VelocityField", vfbRTV1);
     }
 
     void OnDestroy()
@@ -120,8 +143,6 @@ public class StableFluids : MonoBehaviour
         compute.SetFloat("DeltaTime", dt);
 
         // Advection
-        compute.SetTexture(kernelAdvect, "U_in", vfbRTV1);
-        compute.SetTexture(kernelAdvect, "W_out", vfbRTV2);
         compute.Dispatch(kernelAdvect, threadCountX, threadCountY, 1);
 
         // Diffuse setup
@@ -129,26 +150,22 @@ public class StableFluids : MonoBehaviour
         compute.SetFloat("Alpha", difalpha);
         compute.SetFloat("Beta", 4 + difalpha);
         Graphics.CopyTexture(vfbRTV2, vfbRTV1);
-        compute.SetTexture(kernelJacobi2, "B2_in", vfbRTV1);
-
+        
         // Jacobi iteration
         for (var i = 0; i < 20; i++)
         {
-            compute.SetTexture(kernelJacobi2, "X2_in", vfbRTV2);
-            compute.SetTexture(kernelJacobi2, "X2_out", vfbRTV3);
-            compute.Dispatch(kernelJacobi2, threadCountX, threadCountY, 1);
+            compute.SetTexture(kernelDiffuse2, "X2_in", vfbRTV2);
+            compute.SetTexture(kernelDiffuse2, "X2_out", vfbRTV3);
+            compute.Dispatch(kernelDiffuse2, threadCountX, threadCountY, 1);
 
-            compute.SetTexture(kernelJacobi2, "X2_in", vfbRTV3);
-            compute.SetTexture(kernelJacobi2, "X2_out", vfbRTV2);
-            compute.Dispatch(kernelJacobi2, threadCountX, threadCountY, 1);
+            compute.SetTexture(kernelDiffuse2, "X2_in", vfbRTV3);
+            compute.SetTexture(kernelDiffuse2, "X2_out", vfbRTV2);
+            compute.Dispatch(kernelDiffuse2, threadCountX, threadCountY, 1);
         }
 
         // Add external force
         compute.SetVector("ForceOrigin", input);
-        compute.SetFloat("ForceExponent", exponent);
-        compute.SetTexture(kernelForce, "W_in", vfbRTV2);
-        compute.SetTexture(kernelForce, "W_out", vfbRTV3);
-
+        
         if (Input.GetMouseButton(1))
             // Random push
             compute.SetVector("ForceVector", Random.insideUnitCircle * force * 0.025f);
@@ -161,38 +178,29 @@ public class StableFluids : MonoBehaviour
         compute.Dispatch(kernelForce, threadCountX, threadCountY, 1);
 
         // Projection setup
-        compute.SetTexture(kernelPSetup, "W_in", vfbRTV3);
-        compute.SetTexture(kernelPSetup, "DivW_out", vfbRTV2);
-        compute.SetTexture(kernelPSetup, "P_out", vfbRTP1);
-        compute.Dispatch(kernelPSetup, threadCountX, threadCountY, 1);
+        compute.Dispatch(kernelProjectSetup, threadCountX, threadCountY, 1);
 
         // Jacobi iteration
         compute.SetFloat("Alpha", -dx * dx);
         compute.SetFloat("Beta", 4);
-        compute.SetTexture(kernelJacobi1, "B1_in", vfbRTV2);
 
         for (var i = 0; i < 20; i++)
         {
-            compute.SetTexture(kernelJacobi1, "X1_in", vfbRTP1);
-            compute.SetTexture(kernelJacobi1, "X1_out", vfbRTP2);
-            compute.Dispatch(kernelJacobi1, threadCountX, threadCountY, 1);
+            compute.SetTexture(kernelDiffuse1, "X1_in", vfbRTP1);
+            compute.SetTexture(kernelDiffuse1, "X1_out", vfbRTP2);
+            compute.Dispatch(kernelDiffuse1, threadCountX, threadCountY, 1);
 
-            compute.SetTexture(kernelJacobi1, "X1_in", vfbRTP2);
-            compute.SetTexture(kernelJacobi1, "X1_out", vfbRTP1);
-            compute.Dispatch(kernelJacobi1, threadCountX, threadCountY, 1);
+            compute.SetTexture(kernelDiffuse1, "X1_in", vfbRTP2);
+            compute.SetTexture(kernelDiffuse1, "X1_out", vfbRTP1);
+            compute.Dispatch(kernelDiffuse1, threadCountX, threadCountY, 1);
         }
 
         // Projection finish
-        compute.SetTexture(kernelPFinish, "W_in", vfbRTV3);
-        compute.SetTexture(kernelPFinish, "P_in", vfbRTP1);
-        compute.SetTexture(kernelPFinish, "U_out", vfbRTV1);
-        compute.Dispatch(kernelPFinish, threadCountX, threadCountY, 1);
+        compute.Dispatch(kernelProjectFinish, threadCountX, threadCountY, 1);
 
         // Apply the velocity field to the color buffer.
         var offs = Vector2.one * (Input.GetMouseButton(1) ? 0 : 1e+7f);
         material.SetVector("_ForceOrigin", input + offs);
-        material.SetFloat("_ForceExponent", exponent);
-        material.SetTexture("_VelocityField", vfbRTV1);
         Graphics.Blit(colorRT1, colorRT2, material, 0);
 
         // Swap the color buffers.

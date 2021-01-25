@@ -1,28 +1,94 @@
-﻿#pragma kernel advect
-#pragma kernel force
-#pragma kernel project
-#pragma kernel diffuse
+﻿// StableFluids - A GPU implementation of Jos Stam's Stable Fluids on Unity
+// https://github.com/keijiro/StableFluids
 
-[numthreads(8,8,1)]
-void advect (uint3 id : SV_DispatchThreadID)
+#pragma kernel Advect
+#pragma kernel Force
+#pragma kernel ProjectSetup
+#pragma kernel ProjectFinish
+#pragma kernel Diffuse1
+#pragma kernel Diffuse2
+
+// Common parameter
+float Time;
+float DeltaTime;
+
+// External force
+float2 ForceOrigin;
+float2 ForceVector;
+float ForceExponent;
+
+// U (velocity field)
+Texture2D<float2> U_in;
+RWTexture2D<float2> U_out;
+
+// W (velocity field; working)
+Texture2D<float2> W_in;
+RWTexture2D<float2> W_out;
+
+// Div W  
+RWTexture2D<float> DivW_out;
+
+// P (pressure field)
+Texture2D<float> P_in;
+RWTexture2D<float> P_out;
+
+// Jacobi method arguments
+float Alpha, Beta;
+
+Texture2D<float> X1_in;
+Texture2D<float> B1_in;
+RWTexture2D<float> X1_out;
+
+Texture2D<float2> X2_in;
+Texture2D<float2> B2_in;
+RWTexture2D<float2> X2_out;
+
+// Advect step
+[numthreads(8, 8, 1)]
+void Advect(uint2 tid : SV_DispatchThreadID)
 {
     
 }
 
-[numthreads(8,8,1)]
-void force (uint3 id : SV_DispatchThreadID)
+// Add-force step  
+[numthreads(8, 8, 1)]
+void Force(uint2 tid : SV_DispatchThreadID)
 {
     
 }
 
-[numthreads(8,8,1)]
-void project (uint3 id : SV_DispatchThreadID)
+// Setup for Project step (divW calculation)
+[numthreads(8, 8, 1)]
+void ProjectSetup(uint2 tid : SV_DispatchThreadID)
+{
+    uint2 dim;
+    W_in.GetDimensions(dim.x, dim.y);
+
+    DivW_out[tid] = (W_in[tid + int2(1, 0)].x - W_in[tid - int2(1, 0)].x +
+                     W_in[tid + int2(0, 1)].y - W_in[tid - int2(0, 1)].y) * dim.y / 2;
+
+    P_out[tid] = 0;
+}
+
+// Finishing for Project step (divergence free field calculation)
+[numthreads(8, 8, 1)]
+void ProjectFinish(uint2 tid : SV_DispatchThreadID)
+{
+    //TO DO: Project
+
+    //TO DO: Set Boundary
+}
+
+// Jacobi method with a scalar field
+[numthreads(8, 8, 1)]
+void Diffuse1(uint2 tid : SV_DispatchThreadID)
 {
     
 }
 
-[numthreads(8,8,1)]
-void diffuse (uint3 id : SV_DispatchThreadID)
+// Jacobi method with a vector field
+[numthreads(8, 8, 1)]
+void Diffuse2(uint2 tid : SV_DispatchThreadID)
 {
     
 }
