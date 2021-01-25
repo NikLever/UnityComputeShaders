@@ -4,7 +4,7 @@
 #pragma kernel Advect
 #pragma kernel Force
 #pragma kernel ProjectSetup
-#pragma kernel ProjectFinish
+#pragma kernel Project
 #pragma kernel Diffuse1
 #pragma kernel Diffuse2
 
@@ -72,7 +72,7 @@ void ProjectSetup(uint2 tid : SV_DispatchThreadID)
 
 // Finishing for Project step (divergence free field calculation)
 [numthreads(8, 8, 1)]
-void ProjectFinish(uint2 tid : SV_DispatchThreadID)
+void Project(uint2 tid : SV_DispatchThreadID)
 {
     //TO DO: Project
 

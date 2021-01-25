@@ -20,7 +20,7 @@ public class StableFluids : MonoBehaviour
     int kernelAdvect;
     int kernelForce;
     int kernelProjectSetup;
-    int kernelProjectFinish;
+    int kernelProject;
     int kernelDiffuse1;
     int kernelDiffuse2;
 
@@ -87,7 +87,7 @@ public class StableFluids : MonoBehaviour
         kernelAdvect = compute.FindKernel("Advect");
         kernelForce = compute.FindKernel("Force");
         kernelProjectSetup = compute.FindKernel("ProjectSetup");
-        kernelProjectFinish = compute.FindKernel("ProjectFinish");
+        kernelProject = compute.FindKernel("Project");
         kernelDiffuse1 = compute.FindKernel("Diffuse1");
         kernelDiffuse2 = compute.FindKernel("Diffuse2");
 
@@ -105,9 +105,9 @@ public class StableFluids : MonoBehaviour
 
         compute.SetTexture(kernelDiffuse1, "B1_in", vfbRTV2);
 
-        compute.SetTexture(kernelProjectFinish, "W_in", vfbRTV3);
-        compute.SetTexture(kernelProjectFinish, "P_in", vfbRTP1);
-        compute.SetTexture(kernelProjectFinish, "U_out", vfbRTV1);
+        compute.SetTexture(kernelProject, "W_in", vfbRTV3);
+        compute.SetTexture(kernelProject, "P_in", vfbRTP1);
+        compute.SetTexture(kernelProject, "U_out", vfbRTV1);
         
         compute.SetFloat("ForceExponent", exponent);
 
@@ -196,7 +196,7 @@ public class StableFluids : MonoBehaviour
         }
 
         // Projection finish
-        compute.Dispatch(kernelProjectFinish, threadCountX, threadCountY, 1);
+        compute.Dispatch(kernelProject, threadCountX, threadCountY, 1);
 
         // Apply the velocity field to the color buffer.
         var offs = Vector2.one * (Input.GetMouseButton(1) ? 0 : 1e+7f);

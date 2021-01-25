@@ -260,7 +260,7 @@ MonoBehaviour:
   angularFrictionCoefficient: 0.1
   angularForceScalar: 100
   linearForceScalar: 100
-  rigidBodyCount: 300
+  rigidBodyCount: 10
   stepsPerUpdate: 10
 --- !u!4 &411714672
 Transform:

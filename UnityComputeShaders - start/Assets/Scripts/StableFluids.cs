@@ -13,16 +13,15 @@ public class StableFluids : MonoBehaviour
     public Texture2D initial;
     public ComputeShader compute;
     public Material material;
-
    
     Vector2 previousInput;
 
     int kernelAdvect;
     int kernelForce;
-    int kernelPSetup;
-    int kernelPFinish;
-    int kernelJacobi1;
-    int kernelJacobi2;
+    int kernelProjectSetup;
+    int kernelProject;
+    int kernelDiffuse1;
+    int kernelDiffuse2;
 
     int threadCountX { get { return (resolution + 7) / 8; } }
     int threadCountY { get { return (resolution * Screen.height / Screen.width + 7) / 8; } }
