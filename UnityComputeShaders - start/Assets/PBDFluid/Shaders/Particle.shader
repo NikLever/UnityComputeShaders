@@ -6,6 +6,7 @@ Shader "PBDFluid/Particle"
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
 		_Glossiness("Smoothness", Range(0,1)) = 0.5
 		_Metallic("Metallic", Range(0,1)) = 0.0
+		_Color ("Color", Color) = (1,1,1,1)
 	}
 	SubShader
 	{
@@ -19,7 +20,7 @@ Shader "PBDFluid/Particle"
 		#pragma instancing_options procedural:setup
 
 		sampler2D _MainTex;
-		float4 color;
+		float4 _Color;
 		float diameter;
 
 		struct Input 
@@ -54,7 +55,7 @@ Shader "PBDFluid/Particle"
 
 		void surf(Input IN, inout SurfaceOutputStandard o) 
 		{
-			o.Albedo = color.rgb;
+			o.Albedo = _Color.rgb;
 			o.Metallic = _Metallic;
 			o.Smoothness = _Glossiness;
 			o.Alpha = 1;

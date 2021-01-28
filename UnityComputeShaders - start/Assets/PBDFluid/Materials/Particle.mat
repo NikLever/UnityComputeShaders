@@ -4,8 +4,9 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_Name: Particle
   m_Shader: {fileID: 4800000, guid: 8fa7cde3011ed60458c25ce506171a0f, type: 3}
   m_ShaderKeywords: 
@@ -25,4 +26,5 @@ Material:
     m_Floats:
     - _Glossiness: 0.5
     - _Metallic: 0
-    m_Colors: []
+    m_Colors:
+    - _Color: {r: 0.52287287, g: 0.5998579, b: 0.8867924, a: 1}
