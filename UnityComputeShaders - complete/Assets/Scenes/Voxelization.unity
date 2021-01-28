@@ -213,6 +213,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1076531641}
+  - component: {fileID: 1076531643}
   - component: {fileID: 1076531642}
   m_Layer: 0
   m_Name: Voxels
@@ -247,10 +248,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 467fc6da0e18449ad906077fa4ec983d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1076531643
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1076531640}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fa60f5cfcf4a46848df18c056f63460, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   meshToVoxelize: {fileID: -2432090755550338912, guid: ea683a209d8984d068fab7cece2058b1,
     type: 3}
-  yParticleCount: 5
-  prefab: {fileID: 8164078559807121111}
+  yParticleCount: 4
+  layer: 9
 --- !u!1 &2019986452
 GameObject:
   m_ObjectHideFlags: 0
