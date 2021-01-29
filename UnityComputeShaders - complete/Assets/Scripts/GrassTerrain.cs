@@ -91,9 +91,10 @@ public class GrassTerrain : MonoBehaviour
 
     void InitPositionsArray(int count, Bounds bounds)
     {
-    	clumpsArray = new GrassClump[count];
-    
+        clumpsArray = new GrassClump[count];
+
         gameObject.AddComponent<MeshCollider>();
+
         RaycastHit hit;
         Vector3 v = new Vector3();
         v.y = (bounds.center.y + bounds.extents.y);
@@ -105,28 +106,25 @@ public class GrassTerrain : MonoBehaviour
         float minY = v.y;
         float range = castY - minY;
         castY += 10;
-        int missed = 0;
+
         int loopCount = 0;
-
-        Vector2 deltaLimits = new Vector2(10000, -10000);
-
         int index = 0;
 
-        while(index < count && loopCount<(count*10))
+        while(index<count && loopCount < (count * 10))
         {
-            Vector3 pos = new Vector3((Random.value * bounds.extents.x * 2 - bounds.extents.x) + bounds.center.x,
-                                       0,
-                                      (Random.value * bounds.extents.z * 2 - bounds.extents.z) + bounds.center.z);
-			pos = transform.TransformPoint(pos);
-			pos.y = castY;
-			
+            loopCount++;
+
+            Vector3 pos = new Vector3(
+                (Random.value * bounds.extents.x * 2 - bounds.extents.x) + bounds.center.x,
+                 0,
+                (Random.value * bounds.extents.z * 2 - bounds.extents.z) + bounds.center.z);
+            pos = transform.TransformPoint(pos);
+            pos.y = castY;
+
             if (Physics.Raycast(pos, Vector3.down, out hit))
             {
                 pos.y = hit.point.y;
                 float deltaHeight = ((pos.y - minY) / range) * heightAffect;
-
-                if (deltaHeight < deltaLimits.x) deltaLimits.x = deltaHeight;
-                if (deltaHeight > deltaLimits.y) deltaLimits.y = deltaHeight;
 
                 if (Random.value > deltaHeight)
                 {
@@ -134,18 +132,9 @@ public class GrassTerrain : MonoBehaviour
                     clumpsArray[index++] = clump;
                 }
             }
-            else
-            {
-                missed++;
-            }
-
-            loopCount++;
         }
 
-        if (missed>0) Debug.Log(missed + " hit point(s) not found.");
-        if (index != count) Debug.Log("Not complete, loopCount exceeded");
-
-        Debug.Log("Delta limits " + deltaLimits);
+        Debug.Log("GrassTerrain:InitPositionArray count:" + count + " index:" + index);
     }
 
     // Update is called once per frame
