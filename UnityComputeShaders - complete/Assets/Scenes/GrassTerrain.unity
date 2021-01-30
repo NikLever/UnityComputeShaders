@@ -225,7 +225,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mesh: {fileID: 8254687373856176130, guid: c61a46b1fba4e4858a25c0da491e87d9, type: 3}
-  material: {fileID: 2100000, guid: 247600e47da1e4417ba0c7718cdfc81f, type: 2}
+  material: {fileID: 2100000, guid: 9f9dc5d93b9fe4b89b6cafb050f59218, type: 2}
   shader: {fileID: 7200000, guid: e09c19d555c9f4897b9640df633a7b3f, type: 3}
   density: 0.988
   scale: 1.36
