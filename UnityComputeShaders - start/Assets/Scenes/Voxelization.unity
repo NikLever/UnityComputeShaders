@@ -213,8 +213,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1076531641}
-  - component: {fileID: 1076531642}
   - component: {fileID: 1076531643}
+  - component: {fileID: 1076531642}
   m_Layer: 0
   m_Name: Voxels
   m_TagString: Untagged

@@ -246,7 +246,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugWireframe: 0
-  shader: {fileID: 7200000, guid: 2c1ed994a412e4233bfc6d56da469cb0, type: 3}
+  shader: {fileID: 7200000, guid: 86fef6cc6870b4eb0a9e744f8babfb5a, type: 3}
   rigidBodyMaterial: {fileID: 2100000, guid: 0beffabe7c634451d9527998eab0a5e4, type: 2}
   sphereMaterial: {fileID: 2100000, guid: 0d315fea00a36764c9226eb565d21116, type: 2}
   lineMaterial: {fileID: 2100000, guid: 74605ee591d3be844b20a229dcfe0267, type: 2}

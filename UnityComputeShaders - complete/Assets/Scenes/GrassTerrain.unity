@@ -193,6 +193,12 @@ PrefabInstance:
       propertyPath: m_CastShadows
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -5754084199372789682, guid: 0832f9b4bd8e947e38ab0614697af75d,
+        type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: -462981019419857548, guid: 0832f9b4bd8e947e38ab0614697af75d,
+        type: 3}
     - target: {fileID: 919132149155446097, guid: 0832f9b4bd8e947e38ab0614697af75d,
         type: 3}
       propertyPath: m_Name
@@ -206,19 +212,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 161417585}
   m_PrefabAsset: {fileID: 0}
---- !u!65 &309211608
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 309211607}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 100.00001, y: 12.40001, z: 100.000015}
-  m_Center: {x: 0, y: -2.3759665, z: 2.8746414}
 --- !u!114 &309211611
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -231,8 +224,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a7d2a5b7a9114823999ea4aef0e99d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mesh: {fileID: -462981019419857548, guid: c61a46b1fba4e4858a25c0da491e87d9, type: 3}
-  material: {fileID: 2100000, guid: 9f9dc5d93b9fe4b89b6cafb050f59218, type: 2}
+  mesh: {fileID: 8254687373856176130, guid: c61a46b1fba4e4858a25c0da491e87d9, type: 3}
+  material: {fileID: 2100000, guid: 247600e47da1e4417ba0c7718cdfc81f, type: 2}
   shader: {fileID: 7200000, guid: e09c19d555c9f4897b9640df633a7b3f, type: 3}
   density: 0.988
   scale: 1.36

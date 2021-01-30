@@ -38,7 +38,7 @@ void UpdateGrass (uint3 id : SV_DispatchThreadID)
 
     if (dist<trampleRadius){
         clump.trample = ((trampleRadius - dist)/trampleRadius) * 0.6;
-        clump.quaternion = MapVector(float3(0,1,0), relativePosition);
+        clump.quaternion = MapVector(float3(0,1,0), normalize(relativePosition));
     }else{
         clump.trample *= 0.98;
     }

@@ -64,7 +64,7 @@ public class GrassClumps : MonoBehaviour
 
     private void OnDestroy()
     {
-        clumpsBuffer.Release();
-        argsBuffer.Release();
+        if (clumpsBuffer != null) clumpsBuffer.Release();
+        if (argsBuffer != null) argsBuffer.Release();
     }
 }
