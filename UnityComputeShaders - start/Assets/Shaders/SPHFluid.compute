@@ -50,7 +50,7 @@ bool Intersect(SPHCollider collider, float3 position){
 
     penetrationNormal = cross(collider.right, collider.up);
     penetrationLength = abs(dot(colliderProjection, penetrationNormal)) - (radius / 2.0);
-    penetrationPosition = collider.position - colliderProjection;
+    penetrationPosition = position;
 
     return penetrationLength < 0.0
         && abs(dot(colliderProjection, collider.right)) < collider.scale.x
