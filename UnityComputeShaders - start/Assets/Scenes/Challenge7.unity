@@ -605,10 +605,10 @@ MonoBehaviour:
   viscosity: 0.000001
   force: 2000
   exponent: 70
-  compute: {fileID: 7200000, guid: d22e22a0ad6cd4182a2c8be1feddb64e, type: 3}
+  compute: {fileID: 7200000, guid: e50ff3d4ee73c41bc8c5bef554e0d177, type: 3}
   shader: {fileID: 4800000, guid: 0b6bd0660ba27481c8a9f053f7ebc70e, type: 3}
   forceOrigin: {x: 0.5, y: 0}
-  forceDirection: {x: 0, y: 5}
+  forceVector: {x: 0, y: 0}
 --- !u!23 &1854601137
 MeshRenderer:
   m_ObjectHideFlags: 0
