@@ -94,7 +94,7 @@ public class BaseCompletePP : MonoBehaviour
     protected virtual void OnEnable()
     {
         Init();
-        CreateTextures();
+        //CreateTextures();
     }
 
     protected virtual void OnDisable()
