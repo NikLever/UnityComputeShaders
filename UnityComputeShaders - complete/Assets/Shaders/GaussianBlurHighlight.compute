@@ -4,7 +4,7 @@
 
 shared Texture2D<float4> source;
 shared RWTexture2D<float4> horzOutput;
-RWTexture2D<float4> output;
+RWTexture2D<float4> outputrt;
 float radius;
 float edgeWidth;
 float shade;
@@ -57,6 +57,6 @@ void Highlight(uint3 id : SV_DispatchThreadID)
     float highlight = inCircle( (float2)id.xy, center.xy, radius, edgeWidth);
     float4 color = lerp( shadedBlurColor, srcColor, highlight );
 
-    output[id.xy] = color;
+    outputrt[id.xy] = color;
 
 }

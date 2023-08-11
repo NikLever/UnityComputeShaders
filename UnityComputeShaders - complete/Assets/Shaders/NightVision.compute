@@ -2,7 +2,7 @@
 #pragma kernel CSMain
 
 Texture2D<float4> source;
-RWTexture2D<float4> output;
+RWTexture2D<float4> outputrt;
 float radius;
 float edgeWidth;
 int lines;
@@ -48,5 +48,5 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     finalColor = lerp(black, finalColor, inVision);
            
-    output[id.xy] = float4(finalColor, 1);
+    outputrt[id.xy] = float4(finalColor, 1);
 }

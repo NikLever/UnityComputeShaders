@@ -5,7 +5,7 @@
 #define PI2 6.28318530718
 
 Texture2D<float4> source;
-RWTexture2D<float4> output;
+RWTexture2D<float4> outputrt;
 float time;
 float4 axisColor;
 float4 sweepColor;
@@ -16,7 +16,7 @@ float getDelta(float x){
 
 float sweep(float2 pt, float2 center, float radius, float line_width, float edge_thickness){
     float2 d = pt - center;
-    float theta = time;
+    float theta = time + 6.3;
     float2 p = float2(cos(theta), -sin(theta))*radius;
     float h = clamp( dot(d,p)/dot(p,p), 0.0, 1.0 );
     float l = length(d - p*h);
@@ -88,5 +88,5 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float alpha = saturate(color.r + color.g + color.b);
     float3 finalColor = lerp(source[id.xy].rgb, color, alpha);
  
-    output[id.xy] = float4(finalColor, 1.0);
+    outputrt[id.xy] = float4(finalColor, 1.0);
 }
