@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using static UnityEngine.Rendering.PostProcessing.PostProcessResources;
 
 public class MeshDeform : MonoBehaviour
 {
@@ -34,7 +35,7 @@ public class MeshDeform : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-    
+        shader = Instantiate(shader);
         if (InitData())
         {
             InitShader();
